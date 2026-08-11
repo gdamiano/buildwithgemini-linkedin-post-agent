@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn Saved Posts Curator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      --card-bg: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --border-color: #e2e8f0;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --shadow-soft: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.01);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 3rem;
+    }
+
+    /* Top Navigation Bar */
+    .top-header {
+      width: 100%;
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+      padding: 0.75rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .nav-btn {
+      padding: 0.5rem 1.1rem;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      text-decoration: none;
+    }
+
+    .nav-btn:hover {
+      background: #f1f5f9;
+      color: var(--text-main);
+    }
+
+    .nav-btn.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-color: #bfdbfe;
+    }
+
+    /* Main Container */
+    .main-wrapper {
+      width: 100%;
+      max-width: 1150px;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      padding: 2.25rem;
+    }
+
+    /* Page Navigation */
+    .page {
+      display: none;
+    }
+    .page.active {
+      display: block;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Step Cards on Page 1 */
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .step-card {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .step-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      border-radius: 50%;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    .step-card h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.15rem;
+      margin-bottom: 0.5rem;
+      color: var(--text-main);
+    }
+
+    .step-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Dropzone Upload */
+    .dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #ffffff;
+      margin-top: 0.75rem;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .dropzone p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .dropzone strong {
+      color: var(--primary);
+    }
+
+    /* Select & Refresh Controls in Step 3 */
+    .select-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+      width: 100%;
+    }
+
+    select {
+      width: 100%;
+      padding: 0.65rem 0.9rem;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      background: #ffffff;
+      color: var(--text-main);
+      cursor: pointer;
+      outline: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    select:focus {
+      border-color: var(--primary);
+    }
+
+    .btn {
+      padding: 0.65rem 1.25rem;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover {
+      background: #f1f5f9;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+    }
+
+    .btn-danger:hover {
+      background: #fca5a5;
+    }
+
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    /* Status Notifications */
+    .status-msg {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      font-size: 0.9rem;
+      margin-top: 1rem;
+      display: none;
+    }
+    .status-msg.success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      display: block;
+    }
+    .status-msg.error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fecaca;
+      display: block;
+    }
+
+    /* Table of Contents Box */
+    .toc-card {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .toc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--text-main);
+    }
+
+    .toc-toggle-btn {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 0.35rem 0.75rem;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .toc-toggle-btn:hover {
+      background: #f1f5f9;
+      color: var(--text-main);
+    }
+
+    .toc-list {
+      margin-top: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      padding-top: 0.75rem;
+      border-top: 1px dashed var(--border-color);
+    }
+
+    .toc-chip {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 0.4rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-main);
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .toc-chip:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    /* Page 2 Results Styling */
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .topic-section {
+      margin-bottom: 2.5rem;
+      scroll-margin-top: 80px;
+    }
+
+    .topic-header {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    th {
+      background: #f8fafc;
+      padding: 0.85rem 1rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-color);
+      vertical-align: top;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Sentiment Cell Formatting */
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.6rem;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 0.75rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .badge-positive {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-neutral {
+      background: #f1f5f9;
+      color: #475569;
+    }
+
+    .badge-negative {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .sentiment-reason {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    a.link {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    a.link:hover {
+      text-decoration: underline;
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-header">
+    <div class="brand-title">
+      <span>📌</span> LinkedIn Saved Posts Curator
+    </div>
+    <nav class="nav-links">
+      <button id="navAnalyze" class="nav-btn active" onclick="showPage(1)">
+        <span>📊</span> Analyze File
+      </button>
+      <button id="navData" class="nav-btn" onclick="showPage(2)">
+        <span>📑</span> Post Data
+      </button>
+    </nav>
+  </header>
+
+  <div class="main-wrapper">
+    <div class="container">
+      
+      <!-- PAGE 1: Input & Data Selection -->
+      <div id="page1" class="page active">
+        
+        <div class="steps-grid">
+          
+          <!-- Step 1: Get Data -->
+          <div class="step-card">
+            <div class="step-number">1</div>
+            <h3>Get Data</h3>
+            <p>Export your saved LinkedIn posts from your account into an <strong>.xlsx</strong> or <strong>.csv</strong> file.</p>
+            <p style="margin-top:0.75rem;">Use an extension like LinkedIn Saved Posts Exporter to get the data quickly (<a class="link" href="https://chromewebstore.google.com/detail/linkedin-saved-posts-expo/fcpdebjamdlbegjmaecakjcpjafgibkm" target="_blank" rel="noopener">View in Chrome Extensions Store</a>).</p>
+          </div>
+
+          <!-- Step 2: Upload Data -->
+          <div class="step-card">
+            <div class="step-number">2</div>
+            <h3>Upload Data</h3>
+            <p>Drag & drop your file here to save it into the agent's <code>data/</code> folder.</p>
+            <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+              <p><strong>Click or drag file here</strong></p>
+              <p style="font-size:0.75rem; color:#94a3b8; margin-top:0.25rem;">(.xlsx, .xls, or .csv)</p>
+              <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleFileUpload(this.files[0])">
+            </div>
+            <div id="uploadStatus" class="status-msg"></div>
+          </div>
+
+          <!-- Step 3: Select Data -->
+          <div class="step-card">
+            <div class="step-number">3</div>
+            <h3>Select Data</h3>
+            <p>Choose an available file from the <code>data/</code> folder to process:</p>
+            <div class="select-group">
+              <select id="fileSelect">
+                <option value="">Loading available files...</option>
+              </select>
+              <button class="btn btn-secondary" style="width:100%;" onclick="loadFilesList()" title="Refresh file list">🔄 Refresh List</button>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="action-bar">
+          <button id="resetBtn" class="btn btn-danger" onclick="resetSavedData()">
+            Reset Saved Data 🗑️
+          </button>
+          <button id="processBtn" class="btn btn-primary" onclick="processSelectedFile()">
+            <span>Process Selected File</span> ✨
+          </button>
+        </div>
+
+      </div>
+
+      <!-- PAGE 2: Table of Results & Export -->
+      <div id="page2" class="page">
+        
+        <div class="top-nav">
+          <button class="btn btn-secondary" onclick="showPage(1)">
+            ← Process Another File
+          </button>
+          <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+            <button class="btn btn-secondary" onclick="downloadExport('csv')">📥 Download All CSV</button>
+            <button class="btn btn-primary" onclick="downloadExport('xlsx')">📥 Download All Excel (.xlsx)</button>
+          </div>
+        </div>
+
+        <!-- Table of Contents -->
+        <div id="tocCard" class="toc-card" style="display:none;">
+          <div class="toc-header">
+            <span id="tocTitle">📋 Table of Contents</span>
+            <button id="tocToggleBtn" class="toc-toggle-btn" onclick="toggleToc()">Collapse ▲</button>
+          </div>
+          <div id="tocList" class="toc-list">
+            <!-- Dynamic TOC Chips -->
+          </div>
+        </div>
+
+        <div id="resultsContainer">
+          <!-- Topic Groups and Tables rendered dynamically -->
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let isTocCollapsed = false;
+
+    // Load files list on startup
+    document.addEventListener('DOMContentLoaded', () => {
+      loadFilesList();
+      setupDropzone();
+    });
+
+    async function showPage(pageNumber) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(`page${pageNumber}`).classList.add('active');
+
+      document.getElementById('navAnalyze').classList.toggle('active', pageNumber === 1);
+      document.getElementById('navData').classList.toggle('active', pageNumber === 2);
+
+      if (pageNumber === 2) {
+        await fetchAndRenderAllStoredPosts();
+      }
+    }
+
+    async function fetchAndRenderAllStoredPosts() {
+      const container = document.getElementById('resultsContainer');
+      container.innerHTML = '<p style="color:var(--text-muted); text-align:center;">Loading stored posts...</p>';
+      
+      try {
+        const res = await fetch('/api/posts');
+        const data = await res.json();
+        renderResults({"parsed_data": {"posts": data.posts || []}});
+      } catch (err) {
+        container.innerHTML = '<p style="color:var(--accent-red); text-align:center;">Error loading stored posts.</p>';
+      }
+    }
+
+    async function loadFilesList() {
+      const select = document.getElementById('fileSelect');
+      select.innerHTML = '<option value="">Loading files...</option>';
+      try {
+        const res = await fetch('/api/files');
+        const data = await res.json();
+        select.innerHTML = '';
+        if (data.files && data.files.length > 0) {
+          data.files.forEach(file => {
+            const opt = document.createElement('option');
+            opt.value = file;
+            opt.textContent = file;
+            select.appendChild(opt);
+          });
+        } else {
+          select.innerHTML = '<option value="">No files in data/ folder</option>';
+        }
+      } catch (err) {
+        select.innerHTML = '<option value="">Error loading files</option>';
+      }
+    }
+
+    function setupDropzone() {
+      const dropzone = document.getElementById('dropzone');
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropzone.classList.add('dragover');
+        }, false);
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropzone.classList.remove('dragover');
+        }, false);
+      });
+      dropzone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+          handleFileUpload(files[0]);
+        }
+      });
+    }
+
+    async function handleFileUpload(file) {
+      if (!file) return;
+      const statusDiv = document.getElementById('uploadStatus');
+      statusDiv.className = 'status-msg';
+      statusDiv.textContent = 'Uploading...';
+      statusDiv.style.display = 'block';
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if (res.ok) {
+          statusDiv.className = 'status-msg success';
+          statusDiv.textContent = `Uploaded '${data.filename}' successfully!`;
+          await loadFilesList();
+          document.getElementById('fileSelect').value = data.filename;
+        } else {
+          statusDiv.className = 'status-msg error';
+          statusDiv.textContent = data.detail || 'Upload failed.';
+        }
+      } catch (err) {
+        statusDiv.className = 'status-msg error';
+        statusDiv.textContent = 'Error uploading file.';
+      }
+    }
+
+    async function resetSavedData() {
+      if (!confirm('Are you sure you want to reset all saved analysis cache? This allows you to test processing from scratch.')) {
+        return;
+      }
+
+      const resetBtn = document.getElementById('resetBtn');
+      resetBtn.disabled = true;
+      resetBtn.textContent = 'Resetting...';
+
+      try {
+        const res = await fetch('/api/reset', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+          alert('Saved data cache successfully reset! Next analysis will process all rows fresh.');
+          if (document.getElementById('page2').classList.contains('active')) {
+            await fetchAndRenderAllStoredPosts();
+          }
+        } else {
+          alert(`Error resetting data: ${data.detail || 'Unknown error'}`);
+        }
+      } catch (err) {
+        alert(`Failed to reset saved data: ${err.message}`);
+      } finally {
+        resetBtn.disabled = false;
+        resetBtn.textContent = 'Reset Saved Data 🗑️';
+      }
+    }
+
+    async function processSelectedFile() {
+      const selectedFile = document.getElementById('fileSelect').value;
+      if (!selectedFile) {
+        alert('Please select or upload a file first.');
+        return;
+      }
+
+      const processBtn = document.getElementById('processBtn');
+      processBtn.disabled = true;
+      processBtn.innerHTML = '<div class="spinner"></div> Processing...';
+
+      try {
+        const res = await fetch('/api/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ filename: selectedFile }),
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          renderResults(data);
+          showPage(2);
+        } else {
+          alert(`Error processing file: ${data.detail || 'Unknown error'}`);
+        }
+      } catch (err) {
+        alert(`Failed to process file: ${err.message}`);
+      } finally {
+        processBtn.disabled = false;
+        processBtn.innerHTML = '<span>Process Selected File</span> ✨';
+      }
+    }
+
+    function toggleToc() {
+      const list = document.getElementById('tocList');
+      const btn = document.getElementById('tocToggleBtn');
+      isTocCollapsed = !isTocCollapsed;
+      
+      if (isTocCollapsed) {
+        list.style.display = 'none';
+        btn.textContent = 'Expand ▾';
+      } else {
+        list.style.display = 'flex';
+        btn.textContent = 'Collapse ▲';
+      }
+    }
+
+    function renderResults(data) {
+      const container = document.getElementById('resultsContainer');
+      const tocCard = document.getElementById('tocCard');
+      const tocTitle = document.getElementById('tocTitle');
+      const tocList = document.getElementById('tocList');
+
+      container.innerHTML = '';
+      tocList.innerHTML = '';
+
+      const parsed = data.parsed_data || {};
+      const posts = parsed.posts || [];
+
+      if (posts.length === 0) {
+        tocCard.style.display = 'none';
+        container.innerHTML = '<p style="color:var(--text-muted); text-align:center; padding: 2rem;">No saved post records found in storage yet. Process a file on the "Analyze File" page to accumulate data!</p>';
+        return;
+      }
+
+      // Group posts by Topic
+      const grouped = {};
+      posts.forEach(p => {
+        const topic = p.topic || 'General Updates';
+        if (!grouped[topic]) grouped[topic] = [];
+        grouped[topic].push(p);
+      });
+
+      // Build Table of Contents
+      tocTitle.textContent = `📋 Table of Contents (${posts.length})`;
+      tocCard.style.display = 'block';
+
+      for (const [topic, items] of Object.entries(grouped)) {
+        const topicId = 'topic-' + topic.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+        
+        const chip = document.createElement('a');
+        chip.className = 'toc-chip';
+        chip.href = `#${topicId}`;
+        chip.textContent = `${topic} (${items.length})`;
+        tocList.appendChild(chip);
+
+        // Build Topic Section
+        const section = document.createElement('div');
+        section.className = 'topic-section';
+        section.id = topicId;
+
+        const header = document.createElement('h2');
+        header.className = 'topic-header';
+        header.innerHTML = `📌 ${escapeHtml(topic)} <span style="font-size:0.9rem; font-weight:normal; color:var(--text-muted);">(${items.length})</span>`;
+        section.appendChild(header);
+
+        const tableResp = document.createElement('div');
+        tableResp.className = 'table-responsive';
+
+        let tableHtml = `
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Job Title</th>
+                <th>Post Summary</th>
+                <th>Link Inside Post</th>
+                <th>Link To Post</th>
+                <th>Sentiment</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+
+        items.forEach(item => {
+          const sent = (item.sentiment || 'Neutral').toLowerCase();
+          const badgeClass = sent.includes('pos') ? 'badge-positive' : sent.includes('neg') ? 'badge-negative' : 'badge-neutral';
+
+          const insideLinkHtml = item.link_inside_post && item.link_inside_post !== 'None'
+            ? item.link_inside_post.split(',').map(u => `<a class="link" href="${escapeHtml(u.trim())}" target="_blank" rel="noopener">${escapeHtml(u.trim())}</a>`).join(', ')
+            : '<span style="color:#94a3b8;">None</span>';
+
+          const postLinkHtml = item.link_to_post
+            ? `<a class="link" href="${escapeHtml(item.link_to_post)}" target="_blank" rel="noopener">View Post ↗</a>`
+            : '<span style="color:#94a3b8;">N/A</span>';
+
+          const summaryText = item.post_summary || item.content_snippet || 'N/A';
+          const reasonText = item.sentiment_reason ? escapeHtml(item.sentiment_reason) : '';
+
+          tableHtml += `
+            <tr>
+              <td style="white-space:nowrap;">${escapeHtml(item.date || 'N/A')}</td>
+              <td><strong>${escapeHtml(item.name || 'Unknown')}</strong></td>
+              <td style="color:var(--text-muted);">${escapeHtml(item.job_title || 'N/A')}</td>
+              <td style="min-width:200px; max-width:280px; font-size:0.875rem; line-height:1.4;">${escapeHtml(summaryText)}</td>
+              <td style="max-width:200px; word-break:break-all;">${insideLinkHtml}</td>
+              <td style="white-space:nowrap;">${postLinkHtml}</td>
+              <td style="min-width:140px;">
+                <span class="badge ${badgeClass}">${escapeHtml(item.sentiment || 'Neutral')}</span>
+                ${reasonText ? `<div class="sentiment-reason">${reasonText}</div>` : ''}
+              </td>
+            </tr>
+          `;
+        });
+
+        tableHtml += '</tbody></table>';
+        tableResp.innerHTML = tableHtml;
+        section.appendChild(tableResp);
+        container.appendChild(section);
+      }
+    }
+
+    function downloadExport(format) {
+      window.location.href = `/api/export?format=${format}`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
