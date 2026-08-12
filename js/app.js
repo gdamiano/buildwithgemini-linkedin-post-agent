@@ -340,8 +340,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           </button>
         </td>
         <td style="text-align: center; vertical-align: middle;">
-          <button class="btn-icon edit-btn" data-id="${p.id}" title="Edit Category">
-            🏷️✏️
+          <button class="btn-icon edit-btn" data-id="${p.id}" title="Edit Category Topic">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; margin: 0 auto; color: var(--text-muted);">
+              <!-- Tag base -->
+              <path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l4.71-4.71c.94-.94.94-2.48 0-3.42L12 2Z"></path>
+              <path d="M7 7h.01"></path>
+              <!-- Pencil over tag -->
+              <path d="m16 5 3 3"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
           </button>
         </td>
       `;
@@ -373,7 +380,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add event listeners to Star buttons
     document.querySelectorAll('.star-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
-        const postId = e.target.getAttribute('data-id');
+        const postId = e.target.closest('.star-btn').getAttribute('data-id');
         const targetPost = await window.postStorage.getPost(postId);
         if (targetPost) {
           targetPost.starred = !targetPost.starred;
@@ -383,22 +390,98 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
 
-    // Add event listeners to Edit Category buttons (Tag + Pen icon)
+    // Add event listeners to Edit Category buttons (Pencil over Tag SVG icon)
     document.querySelectorAll('.edit-btn').forEach(btn => {
       btn.addEventListener('click', async (e) => {
-        const postId = e.target.getAttribute('data-id');
-        const targetPost = await window.postStorage.getPost(postId);
-        if (targetPost) {
-          const newCategory = prompt(`Edit category topic for "${targetPost.name}":`, targetPost.topic);
-          if (newCategory && newCategory.trim() !== '') {
-            targetPost.topic = newCategory.trim();
-            await window.postStorage.savePost(targetPost);
-            await loadAndRenderPosts();
-          }
-        }
+        const postId = e.target.closest('.edit-btn').getAttribute('data-id');
+        editingPostId = postId;
+        await openCategoryEditModal(postId);
       });
     });
   }
+
+  // --- Category Edit Modal Logic ---
+  let editingPostId = null;
+  const categoryEditModal = document.getElementById('categoryEditModal');
+  const closeCategoryModalBtn = document.getElementById('closeCategoryModalBtn');
+  const cancelCategoryBtn = document.getElementById('cancelCategoryBtn');
+  const saveCategoryBtn = document.getElementById('saveCategoryBtn');
+  const categorySelect = document.getElementById('categorySelect');
+  const customCategoryGroup = document.getElementById('customCategoryGroup');
+  const customCategoryInput = document.getElementById('customCategoryInput');
+
+  async function openCategoryEditModal(postId) {
+    const post = await window.postStorage.getPost(postId);
+    if (!post) return;
+
+    const allPosts = await window.postStorage.getAllPosts();
+    const existingTopics = Array.from(new Set(allPosts.map(p => p.topic).filter(Boolean)));
+    
+    // Ensure standard default topics are also present
+    const defaultTopics = [
+      'Product Design & UX',
+      'AI & Machine Learning',
+      'Cloud & Infrastructure',
+      'Career & Hiring Opportunities',
+      'Product Strategy & Leadership',
+      'Industry Insights & Updates'
+    ];
+    
+    const combinedTopics = Array.from(new Set([...existingTopics, ...defaultTopics]));
+
+    categorySelect.innerHTML = '';
+    combinedTopics.forEach(top => {
+      const opt = document.createElement('option');
+      opt.value = top;
+      opt.textContent = top;
+      if (top === post.topic) opt.selected = true;
+      categorySelect.appendChild(opt);
+    });
+
+    // Add Write-in Option at the bottom
+    const writeInOpt = document.createElement('option');
+    writeInOpt.value = '__WRITE_IN__';
+    writeInOpt.textContent = '✏️ + Write-in new category...';
+    categorySelect.appendChild(writeInOpt);
+
+    customCategoryGroup.style.display = 'none';
+    customCategoryInput.value = '';
+    categoryEditModal.classList.add('active');
+  }
+
+  categorySelect.addEventListener('change', () => {
+    if (categorySelect.value === '__WRITE_IN__') {
+      customCategoryGroup.style.display = 'block';
+      customCategoryInput.focus();
+    } else {
+      customCategoryGroup.style.display = 'none';
+    }
+  });
+
+  const closeCategoryModal = () => categoryEditModal.classList.remove('active');
+  closeCategoryModalBtn.addEventListener('click', closeCategoryModal);
+  cancelCategoryBtn.addEventListener('click', closeCategoryModal);
+
+  saveCategoryBtn.addEventListener('click', async () => {
+    if (!editingPostId) return;
+
+    let selectedTopic = categorySelect.value;
+    if (selectedTopic === '__WRITE_IN__') {
+      selectedTopic = customCategoryInput.value.trim();
+      if (!selectedTopic) {
+        alert('Please enter a custom category name.');
+        return;
+      }
+    }
+
+    const post = await window.postStorage.getPost(editingPostId);
+    if (post) {
+      post.topic = selectedTopic;
+      await window.postStorage.savePost(post);
+      closeCategoryModal();
+      await loadAndRenderPosts();
+    }
+  });
 
   searchInput.addEventListener('input', () => loadAndRenderPosts());
 
