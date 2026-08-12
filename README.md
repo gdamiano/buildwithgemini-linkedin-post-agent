@@ -1,93 +1,48 @@
-# linkedin-post-agent
+# LinkedIn Saved Post Browser (SPB)
 
-Simple ReAct agent
-Agent generated with `agents-cli` version `1.2.1`
+> 📦 **Original Prototype Milestone:** 
+> The original GCP Cloud Prototype (using Firestore & Cloud Storage) is preserved for reference. 
+> You can download the [Original Prototype (.zip)](https://github.com/gdamiano/buildwithgemini-linkedin-post-agent/releases/tag/v0.1.0-gcp-prototype) or view the [`archive/original-gcp-prototype` branch](https://github.com/gdamiano/buildwithgemini-linkedin-post-agent/tree/archive/original-gcp-prototype).
 
-## Project Structure
+A zero-cost, privacy-first, client-side web application for organizing, summarizing, and topic-clustering LinkedIn saved posts.
 
-```
-linkedin-post-agent/
-├── app/         # Core agent code
-│   ├── agent.py               # Main agent logic
-│   ├── fast_api_app.py        # FastAPI Backend server
-│   └── app_utils/             # App utilities and helpers
-├── tests/                     # Unit, integration, and load tests
-├── GEMINI.md                  # AI-assisted development guide
-└── pyproject.toml             # Project dependencies
-```
+## 🚀 Key Features
 
-> 💡 **Tip:** Use [Antigravity CLI](https://antigravity.google/) for AI-assisted development - project context is pre-configured in `GEMINI.md`.
-
-## Requirements
-
-Before you begin, ensure you have:
-- **uv**: Python package manager (used for all dependency management in this project) - [Install](https://docs.astral.sh/uv/getting-started/installation/) ([add packages](https://docs.astral.sh/uv/concepts/dependencies/) with `uv add <package>`)
-- **agents-cli**: Agents CLI - Install with `uv tool install google-agents-cli`
-- **Google Cloud SDK**: For GCP services - [Install](https://cloud.google.com/sdk/docs/install)
-
-
-## Quick Start
-
-Install `agents-cli` and its skills if not already installed:
-
-```bash
-uvx google-agents-cli setup
-```
-
-Install required packages:
-
-```bash
-agents-cli install
-```
-
-Test the agent with a local web server:
-
-```bash
-agents-cli playground
-```
-
-You can also use features from the [ADK](https://adk.dev/) CLI with `uv run adk`.
-
-## Commands
-
-| Command              | Description                                                                                 |
-| -------------------- | ------------------------------------------------------------------------------------------- |
-| `agents-cli install` | Install dependencies using uv                                                         |
-| `agents-cli playground` | Launch local development environment                                                  |
-| `agents-cli lint`    | Run code quality checks                                                               |
-| `agents-cli eval`    | Evaluate agent behavior (generate, grade, analyze, and more — see `agents-cli eval --help`) |
-| `uv run pytest tests/unit tests/integration` | Run unit and integration tests                                                        |
-| `agents-cli deploy`  | Deploy agent to Cloud Run                                                                   || [A2A Inspector](https://github.com/a2aproject/a2a-inspector) | Launch A2A Protocol Inspector                                                        |
-
-## 🛠️ Project Management
-
-| Command | What It Does |
-|---------|--------------|
-| `agents-cli scaffold enhance` | Add CI/CD pipelines and Terraform infrastructure |
-| `agents-cli infra cicd` | One-command setup of entire CI/CD pipeline + infrastructure |
-| `agents-cli scaffold upgrade` | Auto-upgrade to latest version while preserving customizations |
+* **Zero-Cost & Privacy-First:** Runs 100% locally in the user's web browser. No server infrastructure, Docker, or paid cloud databases needed.
+* **On-Device & Modular AI:**
+  * **Primary:** Chrome Built-in AI (`window.ai` / Gemini Nano) running locally on your device with 0 network calls.
+  * **Secondary:** Google Gemini API (via user's free API key from Google AI Studio).
+  * **Simulator Mode:** Offline testing mode for micro-testing.
+* **IndexedDB Local Caching:** Automatically hashes post contents (`post_link|author|date`) and stores analyzed rows locally in browser `IndexedDB`. Closing the app and returning later restores all data instantly with zero LLM token usage!
+* **8-Column Normalized Schema:** Normalizes dates, authors, headlines, summaries, body links, permalinks, and sentiment scoring with contextual explanations.
+* **Hiring Rule Enforcement:** Automatically formats hiring posts as `"Hiring [Job Title] at [Company]"`.
+* **Topic-Clustered Table of Contents (TOC):** Clickable filter chips (*Product Design & UX*, *AI & Machine Learning*, *Cloud & Infrastructure*, *Career & Hiring*, *Product Strategy*, etc.).
+* **1-Click Export:** Download cleaned and analyzed repositories as `.csv` or `.xlsx` files.
 
 ---
 
-## Development
+## 🛠️ Project Structure
 
-Edit your agent logic in `app/agent.py` and test with `agents-cli playground` - it auto-reloads on save.
-
-## Deployment
-
-```bash
-gcloud config set project <your-project-id>
-agents-cli deploy
+```
+buildwithgemini-linkedin-post-agent/
+├── index.html         # Main single-page web app entrypoint
+├── css/
+│   └── styles.css     # Design system (Inter & Outfit fonts, badges, dropzone, cards)
+├── js/
+│   ├── storage.js     # IndexedDB local cache manager (SHA-256 deduplication)
+│   ├── fileParser.js  # SheetJS spreadsheet parser (.csv & .xlsx) + Body URL Regex
+│   ├── aiService.js   # Pluggable AI adapter (window.ai, Gemini REST API, Mock)
+│   └── app.js         # UI controller, tab router, search filter, and TOC renderer
+└── data/
+    └── linkedin_posts_sample.csv  # Sample input file for testing
 ```
 
-To add CI/CD and Terraform, run `agents-cli scaffold enhance`.
-To set up your production infrastructure, run `agents-cli infra cicd`.
+---
 
-## Observability
+## 🌐 Deployment to GitHub Pages
 
-Built-in telemetry exports to Cloud Trace, BigQuery, and Cloud Logging.
-
-## A2A Inspector
-
-This agent supports the [A2A Protocol](https://a2a-protocol.org/). Use the [A2A Inspector](https://github.com/a2aproject/a2a-inspector) to test interoperability.
-See the [A2A Inspector docs](https://github.com/a2aproject/a2a-inspector) for details.
+1. Go to your repository **Settings** on GitHub.
+2. Under **Pages** (in the left sidebar), select:
+   - **Source:** `Deploy from a branch`
+   - **Branch:** `main` / `/ (root)`
+3. Click **Save**. Your site will be live at `https://<username>.github.io/<repo-name>/` in 1-2 minutes!
