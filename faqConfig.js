@@ -33,6 +33,14 @@ window.FAQ_CONFIG = [
     answer: "I don't know yet! I haven't researched it. It's something I could potentially add!"
   },
   {
+    question: "How are the category tags generated?",
+    answer: "The LLM is prompted to do some pattern matching, and build tags based on the posts you load.<br></br>You may edit the tag for any logged post, to fix AI misses or create your own categories."
+  },
+  {
+    question: "How do I spot job postings?",
+    answer: "The AI is specifically told to reserve a 'Hiring' tag for posts that describe having an open role."
+  },
+  {
     question: "Why was this app made?",
     answer: "The creator, Greg, keeps saving LinkedIn posts... dozens of posts. Too many posts! Greg just wants to find the topics he saved, but the LinkedIn site doesn't have many sorting features.<br></br>This app was created to give LinkedIn users the added value of organizing their save posts without manual steps or long reads."
   },
