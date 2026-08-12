@@ -52,6 +52,7 @@ class FileParser {
     const name = findValue(['author', 'name', 'posted by', 'user']) || 'LinkedIn Member';
     const jobTitle = findValue(['headline', 'job title', 'title', 'position']) || 'N/A';
     const linkToPost = findValue(['post link', 'url', 'link', 'permalink']) || '';
+    const profileLink = findValue(['profile', 'profile link', 'author url', 'user link', 'author link']) || '';
     const postText = findValue(['post text', 'content', 'text', 'body', 'description']) || '';
 
     const linkInsidePost = this.extractUrlsFromText(postText);
@@ -61,6 +62,7 @@ class FileParser {
       name,
       jobTitle,
       linkToPost,
+      profileLink,
       postText,
       linkInsidePost
     };

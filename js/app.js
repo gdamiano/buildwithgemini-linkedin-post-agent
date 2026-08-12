@@ -204,13 +204,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // --- Topic Chips (TOC) ---
   function renderTopicChips(allPosts) {
     const topicCounts = {};
+    let starredCount = 0;
+
     allPosts.forEach(p => {
       topicCounts[p.topic] = (topicCounts[p.topic] || 0) + 1;
+      if (p.starred) starredCount++;
     });
 
     topicChipsContainer.innerHTML = '';
 
-    // "All" chip
+    // "All Posts" chip
     const allChip = document.createElement('div');
     allChip.className = `topic-chip ${currentFilterTopic === 'All' ? 'active' : ''}`;
     allChip.innerHTML = `All Posts <span class="chip-count">${allPosts.length}</span>`;
@@ -219,6 +222,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       loadAndRenderPosts();
     });
     topicChipsContainer.appendChild(allChip);
+
+    // "Star Posts" chip (Right after All Posts)
+    const starChip = document.createElement('div');
+    starChip.className = `topic-chip ${currentFilterTopic === 'Starred' ? 'active' : ''}`;
+    starChip.style.backgroundColor = currentFilterTopic === 'Starred' ? '#f59e0b' : '#fef3c7';
+    starChip.style.color = currentFilterTopic === 'Starred' ? '#ffffff' : '#b45309';
+    starChip.style.borderColor = '#fde68a';
+    starChip.innerHTML = `⭐ Star Posts <span class="chip-count">${starredCount}</span>`;
+    starChip.addEventListener('click', () => {
+      currentFilterTopic = 'Starred';
+      loadAndRenderPosts();
+    });
+    topicChipsContainer.appendChild(starChip);
 
     Object.keys(topicCounts).forEach(topic => {
       const chip = document.createElement('div');
@@ -237,7 +253,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchTerm = searchInput.value.toLowerCase().trim();
 
     const filtered = allPosts.filter(p => {
-      const matchesTopic = currentFilterTopic === 'All' || p.topic === currentFilterTopic;
+      const matchesTopic = currentFilterTopic === 'All' || 
+        (currentFilterTopic === 'Starred' ? p.starred : p.topic === currentFilterTopic);
       const matchesSearch = !searchTerm || 
         p.name.toLowerCase().includes(searchTerm) ||
         p.jobTitle.toLowerCase().includes(searchTerm) ||
@@ -252,7 +269,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (filtered.length === 0) {
       postsTableBody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+          <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
             No saved posts found matching criteria. Import a file or adjust filters.
           </td>
         </tr>
@@ -269,29 +286,45 @@ document.addEventListener('DOMContentLoaded', async () => {
       const badgeClass = p.sentiment === 'Positive' ? 'badge-positive' : 
                          p.sentiment === 'Negative' ? 'badge-negative' : 'badge-neutral';
 
-      const postLinkHtml = p.linkToPost ? 
-        `<a href="${escapeHtml(p.linkToPost)}" target="_blank" rel="noopener">View Post 🔗</a>` : 'N/A';
+      // Name & Title combined cell (Name links to profile if profileLink exists)
+      const nameHtml = p.profileLink ? 
+        `<a href="${escapeHtml(p.profileLink)}" target="_blank" rel="noopener" class="author-name-link">${escapeHtml(p.name)}</a>` :
+        `<strong>${escapeHtml(p.name)}</strong>`;
 
-      // Format links inside body as clickable <a> tags
-      let linksInsideBodyHtml = 'None';
+      const nameAndTitleHtml = `
+        <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+          <div>${nameHtml}</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.3;">${escapeHtml(p.jobTitle)}</div>
+        </div>
+      `;
+
+      // Post Summary & Topic combined cell
+      const postSummaryHtml = `
+        <div style="display: flex; flex-direction: column; gap: 0.4rem;">
+          <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">${escapeHtml(p.postSummary)}</div>
+          <div><span class="topic-pill-tag">${escapeHtml(p.topic)}</span></div>
+        </div>
+      `;
+
+      // Combined Links column (Post link + embedded body links)
+      let linksList = [];
+      if (p.linkToPost) {
+        linksList.push(`• <a href="${escapeHtml(p.linkToPost)}" target="_blank" rel="noopener" class="body-link">Post ↗</a>`);
+      }
       if (p.linkInsidePost && p.linkInsidePost !== 'None') {
         const urls = p.linkInsidePost.split(',').map(u => u.trim());
-        linksInsideBodyHtml = urls.map(url => {
-          const displayUrl = url.length > 30 ? url.slice(0, 28) + '...' : url;
-          return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="body-link">${escapeHtml(displayUrl)} ↗</a>`;
-        }).join('<br>');
+        urls.forEach(url => {
+          const displayUrl = url.length > 25 ? url.slice(0, 23) + '...' : url;
+          linksList.push(`• <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="body-link">${escapeHtml(displayUrl)} ↗</a>`);
+        });
       }
+      const linksHtml = linksList.length > 0 ? linksList.join('<br>') : '<span style="color: var(--text-muted);">None</span>';
 
       tr.innerHTML = `
-        <td style="white-space: nowrap;">${p.date || 'N/A'}</td>
-        <td><strong>${escapeHtml(p.name)}</strong></td>
-        <td style="color: var(--text-muted);">${escapeHtml(p.jobTitle)}</td>
-        <td>
-          <div style="font-weight: 600; margin-bottom: 0.2rem;">${escapeHtml(p.postSummary)}</div>
-          <span style="font-size: 0.75rem; background-color: #f1f5f9; padding: 0.1rem 0.4rem; border-radius: 4px;">${escapeHtml(p.topic)}</span>
-        </td>
-        <td style="font-size: 0.8rem; word-break: break-all;">${linksInsideBodyHtml}</td>
-        <td style="white-space: nowrap;">${postLinkHtml}</td>
+        <td style="white-space: nowrap; font-size: 0.85rem;">${p.date || 'N/A'}</td>
+        <td style="max-width: 220px;">${nameAndTitleHtml}</td>
+        <td style="max-width: 280px;">${postSummaryHtml}</td>
+        <td style="font-size: 0.825rem; max-width: 180px; word-break: break-all;">${linksHtml}</td>
         <td>
           <div class="sentiment-cell">
             <div><span class="badge ${badgeClass}">${escapeHtml(p.sentiment)}</span></div>
@@ -300,6 +333,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         </td>
         <td style="text-align: center; vertical-align: middle;">
           <input type="checkbox" class="read-checkbox" data-id="${p.id}" ${p.read ? 'checked' : ''}>
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+          <button class="btn-icon star-btn ${p.starred ? 'starred' : ''}" data-id="${p.id}" title="${p.starred ? 'Starred reminder' : 'Star post'}">
+            ${p.starred ? '⭐' : '☆'}
+          </button>
+        </td>
+        <td style="text-align: center; vertical-align: middle;">
+          <button class="btn-icon edit-btn" data-id="${p.id}" title="Edit Category">
+            🏷️✏️
+          </button>
         </td>
       `;
 
@@ -322,6 +365,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             parentRow.classList.add('row-read');
           } else {
             parentRow.classList.remove('row-read');
+          }
+        }
+      });
+    });
+
+    // Add event listeners to Star buttons
+    document.querySelectorAll('.star-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const postId = e.target.getAttribute('data-id');
+        const targetPost = await window.postStorage.getPost(postId);
+        if (targetPost) {
+          targetPost.starred = !targetPost.starred;
+          await window.postStorage.savePost(targetPost);
+          await loadAndRenderPosts();
+        }
+      });
+    });
+
+    // Add event listeners to Edit Category buttons (Tag + Pen icon)
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const postId = e.target.getAttribute('data-id');
+        const targetPost = await window.postStorage.getPost(postId);
+        if (targetPost) {
+          const newCategory = prompt(`Edit category topic for "${targetPost.name}":`, targetPost.topic);
+          if (newCategory && newCategory.trim() !== '') {
+            targetPost.topic = newCategory.trim();
+            await window.postStorage.savePost(targetPost);
+            await loadAndRenderPosts();
           }
         }
       });

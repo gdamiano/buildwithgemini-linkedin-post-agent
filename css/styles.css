@@ -375,13 +375,43 @@ h1, h2, h3, h4, .brand-title {
   accent-color: var(--primary);
 }
 
-.body-link {
-  color: var(--primary);
+.author-name-link {
+  color: #2563eb;
+  font-weight: 700;
   text-decoration: none;
 }
 
-.body-link:hover {
+.author-name-link:hover {
   text-decoration: underline;
+}
+
+.topic-pill-tag {
+  font-size: 0.775rem;
+  color: #64748b;
+  font-weight: 500;
+  background-color: #f1f5f9;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-icon:hover {
+  background-color: #f1f5f9;
+  transform: scale(1.15);
+}
+
+.star-btn.starred {
+  color: #f59e0b;
 }
 
 /* Badges */
