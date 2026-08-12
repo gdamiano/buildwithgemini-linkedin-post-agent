@@ -48,58 +48,72 @@
     
     <!-- Tab 1: Import & File Ingestion View -->
     <section class="tab-view active" id="importView">
-      
-      <div class="card">
-        <h2 class="card-title">🚀 1. Ingest LinkedIn Saved Posts Spreadsheet</h2>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
-          Upload a <code>.csv</code> or <code>.xlsx</code> file containing your exported saved posts. The browser will auto-match date, author, headline, link, and post body columns.
-        </p>
-
-        <div class="dropzone" id="dropzone">
-          <div class="dropzone-icon">📁</div>
-          <div class="dropzone-title">Drag & drop your LinkedIn export file here</div>
-          <div class="dropzone-desc">Supports .CSV, .XLSX, and .XLS files (Parsed 100% locally on device)</div>
-          <input type="file" id="fileInput" accept=".csv, .xlsx, .xls" style="display: none;">
-        </div>
-
-        <div id="filePreviewCard" style="display: none; margin-top: 1rem; padding: 0.85rem; background-color: #f1f5f9; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-          <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 0.25rem;" id="previewFileName"></div>
-          <div style="display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-muted);">
-            <span>📊 Total Rows Found: <strong id="previewTotalRows" style="color: var(--primary);">0</strong></span>
-            <span>🔍 Unique New Rows: <strong id="previewUniqueRows" style="color: var(--badge-positive-text);">0</strong></span>
-            <span>💾 Cached Rows: <strong id="previewCachedRows">0</strong></span>
+      <div class="side-by-side-grid">
+        
+        <!-- Step 1 Box -->
+        <div class="card step-card">
+          <div>
+            <h2 class="card-title">🚀 1. Ingest LinkedIn Saved Posts Spreadsheet</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
+              Upload a <code>.csv</code> or <code>.xlsx</code> file containing your exported saved posts. The browser will auto-match date, author, headline, link, and post body columns.
+            </p>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+              💡 Use <a href="https://chromewebstore.google.com/detail/linkedin-saved-posts-expo/fcpdebjamdlbegjmaecakjcpjafgibkm" target="_blank" rel="noopener" style="color: var(--primary); font-weight: 600; text-decoration: underline;">LinkedIn Saved Posts Exporter</a> to create the file.
+            </p>
           </div>
-        </div>
-      </div>
 
-      <div class="card">
-        <h2 class="card-title">✨ 2. Process & Categorize Posts</h2>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
-          Each row will be hashed and checked against browser storage. Already-processed posts are restored instantly with zero LLM token consumption.
-        </p>
-
-        <div class="form-group" style="max-width: 320px; margin-bottom: 1.25rem;">
-          <label class="form-label" for="maxRowsInput">Max Rows to Process (LLM Limit)</label>
-          <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <input type="number" class="form-input" id="maxRowsInput" min="1" placeholder="e.g. 20 (Leave blank for all)">
-            <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">rows</span>
+          <div class="dropzone" id="dropzone">
+            <div class="dropzone-icon">📁</div>
+            <div class="dropzone-title">Drag & drop your LinkedIn export file here</div>
+            <div class="dropzone-desc">Supports .CSV, .XLSX, and .XLS files (Parsed 100% locally on device)</div>
+            <input type="file" id="fileInput" accept=".csv, .xlsx, .xls" style="display: none;">
           </div>
-          <p style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.35rem;">
-            Filters duplicates first, then stops after processing the specified limit.
-          </p>
-        </div>
 
-        <div id="progressContainer" style="display: none;">
-          <div id="progressStatusText" style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.4rem;">Analyzing posts...</div>
-          <div class="progress-bar-container">
-            <div class="progress-bar-fill" id="progressBarFill"></div>
+          <div id="filePreviewCard" style="display: none; margin-top: 1rem; padding: 0.85rem; background-color: #f1f5f9; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+            <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 0.25rem;" id="previewFileName"></div>
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--text-muted);">
+              <span>📊 Total Rows Found: <strong id="previewTotalRows" style="color: var(--primary);">0</strong></span>
+              <span>🔍 Unique New Rows: <strong id="previewUniqueRows" style="color: var(--badge-positive-text);">0</strong></span>
+              <span>💾 Cached Rows: <strong id="previewCachedRows">0</strong></span>
+            </div>
           </div>
         </div>
 
-        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-          <button class="btn btn-primary" id="processBtn" disabled>Process Selected File ✨</button>
-          <button class="btn btn-danger" id="resetBtn">Clear Saved Data 🗑️</button>
+        <!-- Step 2 Box -->
+        <div class="card step-card">
+          <div>
+            <h2 class="card-title">✨ 2. Process & Categorize Posts</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+              Each row will be hashed and checked against browser storage. Already-processed posts are restored instantly with zero LLM token consumption.
+            </p>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label class="form-label" for="maxRowsInput">Max Rows to Process (LLM Limit)</label>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="number" class="form-input" id="maxRowsInput" min="1" placeholder="e.g. 20 (Leave blank for all)">
+                <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">rows</span>
+              </div>
+              <p style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.35rem;">
+                Filters duplicates first, then stops after processing the specified limit.
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <div id="progressContainer" style="display: none; margin-bottom: 1rem;">
+              <div id="progressStatusText" style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.4rem;">Analyzing posts...</div>
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+              <button class="btn btn-primary" id="processBtn" style="flex: 1;" disabled>Process Selected File ✨</button>
+              <button class="btn btn-danger" id="resetBtn">Clear Saved Data 🗑️</button>
+            </div>
+          </div>
         </div>
+
       </div>
     </section>
 

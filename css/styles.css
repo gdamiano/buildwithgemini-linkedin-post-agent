@@ -176,14 +176,26 @@ h1, h2, h3, h4, .brand-title {
   display: block;
 }
 
-/* Cards & Sections */
-.card {
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-sm);
+/* Side-by-side grid layout for Analyze page */
+.side-by-side-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.step-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+  .side-by-side-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .card-title {
