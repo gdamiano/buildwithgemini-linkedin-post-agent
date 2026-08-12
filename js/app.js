@@ -109,30 +109,75 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  const filePreviewCard = document.getElementById('filePreviewCard');
+  const previewFileName = document.getElementById('previewFileName');
+  const previewTotalRows = document.getElementById('previewTotalRows');
+  const previewUniqueRows = document.getElementById('previewUniqueRows');
+  const previewCachedRows = document.getElementById('previewCachedRows');
+  const maxRowsInput = document.getElementById('maxRowsInput');
+
   async function handleSelectedFile(file) {
-    activeFileName.textContent = `Selected: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
     try {
       parsedRawRows = await window.fileParser.parseSpreadsheet(file);
       processBtn.disabled = false;
-      progressStatusText.textContent = `File ready. Found ${parsedRawRows.length} post rows.`;
+
+      // Deduplicate file internally and check cache status instantly (non-LLM)
+      let cachedCount = 0;
+      let uniqueCount = 0;
+      const seenHashes = new Set();
+      const uniqueFileRows = [];
+
+      for (const raw of parsedRawRows) {
+        const hashId = await window.postStorage.generateHashId(raw.linkToPost, raw.date, raw.name, raw.postText);
+        if (seenHashes.has(hashId)) continue; // Ignore duplicate rows inside same file
+        seenHashes.add(hashId);
+        uniqueFileRows.push(raw);
+
+        const isCached = await window.postStorage.getPost(hashId);
+        if (isCached) {
+          cachedCount++;
+        } else {
+          uniqueCount++;
+        }
+      }
+
+      // Replace parsedRawRows with deduplicated rows
+      parsedRawRows = uniqueFileRows;
+
+      // Update UI Preview Card
+      previewFileName.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      previewTotalRows.textContent = parsedRawRows.length;
+      previewUniqueRows.textContent = uniqueCount;
+      previewCachedRows.textContent = cachedCount;
+      filePreviewCard.style.display = 'block';
+
+      progressStatusText.textContent = `File ready! Found ${parsedRawRows.length} unique rows (${uniqueCount} new to analyze, ${cachedCount} in cache).`;
     } catch (err) {
       alert('Error parsing spreadsheet file: ' + err.message);
     }
   }
 
-  // --- Process File & Batch Analyze with Concurrency ---
+  // --- Process File & Batch Analyze with Concurrency & Row Limit ---
   processBtn.addEventListener('click', async () => {
     if (parsedRawRows.length === 0) return;
+
+    // Check user-specified max row limit
+    let rowLimit = parseInt(maxRowsInput.value, 10);
+    let rowsToProcess = parsedRawRows;
+
+    if (!isNaN(rowLimit) && rowLimit > 0) {
+      rowsToProcess = parsedRawRows.slice(0, rowLimit);
+    }
 
     processBtn.disabled = true;
     progressContainer.style.display = 'block';
 
     let processedCount = 0;
-    const total = parsedRawRows.length;
+    const total = rowsToProcess.length;
     const BATCH_SIZE = 3; // Process 3 posts concurrently for 3x-5x speed boost
 
     for (let i = 0; i < total; i += BATCH_SIZE) {
-      const chunk = parsedRawRows.slice(i, i + BATCH_SIZE);
+      const chunk = rowsToProcess.slice(i, i + BATCH_SIZE);
 
       await Promise.all(chunk.map(async (raw, idx) => {
         const itemIndex = i + idx;
