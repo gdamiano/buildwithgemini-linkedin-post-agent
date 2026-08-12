@@ -34,7 +34,8 @@ buildwithgemini-linkedin-post-agent/
 │   ├── aiService.js   # Pluggable AI adapter (window.ai, Gemini REST API, Mock)
 │   └── app.js         # UI controller, tab router, search filter, and TOC renderer
 └── data/
-    └── linkedin_posts_sample.csv  # Sample input file for testing
+    ├── linkedin-saved-posts-demo.csv  # Stock demo dataset
+    └── posts_cache.json              # Cached analysis data
 ```
 
 ---

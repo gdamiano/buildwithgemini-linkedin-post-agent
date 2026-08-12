@@ -118,9 +118,14 @@
               </div>
             </div>
 
-            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-              <button class="btn btn-primary" id="processBtn" style="flex: 1;" disabled>Process Selected File ✨</button>
-              <button class="btn btn-danger" id="resetBtn">Clear Saved Data 🗑️</button>
+            <div style="margin-top: 1rem;">
+              <button class="btn btn-maroon" id="selectAIBtn" style="width: 100%; margin-bottom: 0.75rem;">
+                Select an AI model to process posts ⚙️
+              </button>
+              <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-primary" id="processBtn" style="flex: 1;" disabled>Process Selected File ✨</button>
+                <button class="btn btn-danger" id="resetBtn">Clear Saved Data 🗑️</button>
+              </div>
             </div>
           </div>
         </div>
@@ -165,7 +170,7 @@
               <th style="width: 90px;">Date</th>
               <th style="width: 220px;">Name & Title</th>
               <th style="min-width: 300px; width: 35%;">Post Summary</th>
-              <th style="width: 170px;">Links</th>
+              <th style="min-width: 110px; width: 170px;">Links</th>
               <th style="max-width: 240px; width: 25%;">Sentiment & Analysis</th>
               <th style="text-align: center; width: 60px;">Read</th>
               <th style="text-align: center; width: 60px;">Star</th>
@@ -218,34 +223,146 @@
 
   <!-- Settings & AI Provider Modal -->
   <div class="modal-overlay" id="settingsModal">
-    <div class="modal">
+    <div class="modal settings-modal-card">
       <div class="modal-header">
-        <h3 style="font-size: 1.15rem;">⚙️ AI Engine Settings</h3>
-        <button class="modal-close" id="closeModalBtn">&times;</button>
+        <h3 class="settings-modal-title">⚙️ AI Engine Settings</h3>
+        <button class="btn btn-primary" id="saveSettingsBtn" style="padding: 0.45rem 1rem; font-size: 0.85rem;">Save & Close</button>
       </div>
       
-      <div class="form-group">
-        <label class="form-label" for="providerSelect">AI Provider</label>
-        <select class="form-select" id="providerSelect">
-          <option value="window.ai">Chrome Built-in AI (window.ai - On Device)</option>
-          <option value="gemini">Google Gemini API (User Key)</option>
-          <option value="mock">Local Simulator Mode (Offline Fast Test)</option>
-        </select>
-        <p style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.3rem;">
-          Chrome Built-in AI runs Gemini Nano directly on your device with 0 network calls.
-        </p>
+      <p class="settings-modal-subtitle">
+        You must have at least one AI model configured and selected to run the app.<br>
+        The app is arranged so usage should not meaningfully spend your AI credit limits.
+      </p>
+
+      <div class="provider-options-list">
+        
+        <!-- Option 1: Chrome Built-in AI -->
+        <div class="provider-card" id="cardWindowAI" data-provider="window.ai">
+          <div class="provider-card-left">
+            <div class="provider-radio"></div>
+            <div class="status-stack">
+              <span class="badge-status-avail" id="badgeWindowAIAvail">Available</span>
+              <span class="badge-status-sel" id="badgeWindowAISel">Selected</span>
+            </div>
+          </div>
+          <div class="provider-card-main">
+            <div class="provider-title">
+              Chrome Browser (window.LanguageModel)
+            </div>
+            <div class="provider-meta">
+              <strong>Cost:</strong> Completely free — runs on your hardware
+            </div>
+            <div class="provider-meta">
+              <strong>Setup:</strong> Open a new Chrome tab and type <code class="code-link">chrome://flags</code>. Find the setting "Prompt API" and set it to Enabled.
+            </div>
+          </div>
+        </div>
+
+        <div class="provider-divider"></div>
+
+        <!-- Option 2: Gemini API -->
+        <div class="provider-card" id="cardGemini" data-provider="gemini">
+          <div class="provider-card-left">
+            <div class="provider-radio"></div>
+            <div class="status-stack">
+              <span class="badge-status-avail" id="badgeGeminiAvail">Available</span>
+              <span class="badge-status-sel" id="badgeGeminiSel">Selected</span>
+            </div>
+          </div>
+          <div class="provider-card-main">
+            <div class="provider-title">
+              Gemini API (requires free Google AI Studio account)
+            </div>
+            <div class="provider-meta">
+              <strong>Cost:</strong> Each post = 1 Gemini "Request." (Free default tier = 1500 rows per day)
+            </div>
+            <div class="provider-meta">
+              <strong>Setup:</strong> <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" class="setup-link">Get an API Key from Google AI Studio ↗</a>, and enter it here to save it.
+            </div>
+
+            <div class="provider-inputs-row">
+              <div class="input-field-group">
+                <label>API Key:</label>
+                <input type="password" class="form-input provider-key-input" id="modalGeminiKeyInput" placeholder="AIzaSy...">
+              </div>
+              <div class="input-field-group">
+                <label>Model:</label>
+                <select class="form-select provider-model-select" id="modalGeminiModelSelect">
+                  <option value="gemini-3.5-flash-lite">Gemini Flash Lite 3.5</option>
+                  <option value="gemini-3.5-flash">Gemini 3.5 Flash</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="provider-divider"></div>
+
+        <!-- Option 3: OpenAI / Anthropic -->
+        <div class="provider-card" id="cardOpenAI" data-provider="openai">
+          <div class="provider-card-left">
+            <div class="provider-radio"></div>
+            <div class="status-stack">
+              <span class="badge-status-avail" id="badgeOpenAIAvail">Available</span>
+              <span class="badge-status-sel" id="badgeOpenAISel">Selected</span>
+            </div>
+          </div>
+          <div class="provider-card-main">
+            <div class="provider-title">
+              OpenAI or Anthropic API (requires free account)
+            </div>
+            <div class="provider-meta">
+              <strong>Cost:</strong> Each post = costs may vary between $0.005-$0.01 per row
+            </div>
+            <div class="provider-meta">
+              <strong>Setup:</strong> <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" class="setup-link">Get an API Key from your provider ↗</a>, and enter it here to save it.
+            </div>
+
+            <div class="provider-inputs-row">
+              <div class="input-field-group">
+                <label>API Key:</label>
+                <input type="password" class="form-input provider-key-input" id="modalOpenAIKeyInput" placeholder="sk-proj-...">
+              </div>
+              <div class="input-field-group">
+                <label>Model:</label>
+                <select class="form-select provider-model-select" id="modalOpenAIModelSelect">
+                  <option value="gpt-4o-mini">GPT-4o mini</option>
+                  <option value="gpt-4o">GPT-4o</option>
+                  <option value="o3-mini">o3-mini</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="provider-divider"></div>
+
+        <!-- Option 4: Local Simulator Mode -->
+        <div class="provider-card" id="cardMock" data-provider="mock">
+          <div class="provider-card-left">
+            <div class="provider-radio"></div>
+            <div class="status-stack">
+              <span class="badge-status-avail" style="color: #64748b;">Available</span>
+              <span class="badge-status-sel" id="badgeMockSel">Selected</span>
+            </div>
+          </div>
+          <div class="provider-card-main">
+            <div class="provider-title">
+              Offline Test Simulator (Mock Service)
+            </div>
+            <div class="provider-meta">
+              <strong>Cost:</strong> Completely free — offline dummy rules engine for instant UI verification
+            </div>
+            <div class="provider-meta">
+              <strong>Setup:</strong> No setup required. Works offline in any browser immediately.
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <div class="form-group">
-        <label class="form-label" for="geminiKeyInput">Google Gemini API Key (Optional)</label>
-        <input type="password" class="form-input" id="geminiKeyInput" placeholder="AIzaSy...">
-        <p style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.3rem;">
-          Stored safely in browser <code>localStorage</code>. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Get a free key at Google AI Studio ↗</a>
-        </p>
-      </div>
-
-      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
-        <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+      <div class="modal-footer-note">
+        <em>Costs are estimates and may vary based on changes providers make to their subscription plans.</em>
       </div>
     </div>
   </div>

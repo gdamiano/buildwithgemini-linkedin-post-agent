@@ -23,23 +23,76 @@ document.addEventListener('DOMContentLoaded', async () => {
   const exportXlsxBtn = document.getElementById('exportXlsxBtn');
   const faqAccordionContainer = document.getElementById('faqAccordionContainer');
   
-  // Settings & Modal
+  // Settings & Modal Elements
   const settingsPill = document.getElementById('settingsPill');
   const settingsModal = document.getElementById('settingsModal');
-  const closeModalBtn = document.getElementById('closeModalBtn');
-  const providerSelect = document.getElementById('providerSelect');
-  const geminiKeyInput = document.getElementById('geminiKeyInput');
   const saveSettingsBtn = document.getElementById('saveSettingsBtn');
   const statusDot = document.getElementById('statusDot');
   const statusText = document.getElementById('statusText');
+
+  const providerCards = document.querySelectorAll('.provider-card');
+  const modalGeminiKeyInput = document.getElementById('modalGeminiKeyInput');
+  const modalGeminiModelSelect = document.getElementById('modalGeminiModelSelect');
+  const modalOpenAIKeyInput = document.getElementById('modalOpenAIKeyInput');
+  const modalOpenAIModelSelect = document.getElementById('modalOpenAIModelSelect');
+
+  const badgeWindowAIAvail = document.getElementById('badgeWindowAIAvail');
+  const badgeGeminiAvail = document.getElementById('badgeGeminiAvail');
+  const badgeOpenAIAvail = document.getElementById('badgeOpenAIAvail');
 
   let parsedRawRows = [];
   let currentFilterTopic = 'All';
 
   // --- Initial Setup ---
+  setupSettingsModalListeners();
   renderFAQSection();
   await checkAIServiceStatus();
   await loadAndRenderPosts();
+
+  function setupSettingsModalListeners() {
+    // Track provider card selection
+    providerCards.forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'A') return;
+        selectCard(card.getAttribute('data-provider'));
+      });
+    });
+
+    // Focus inside inputs automatically selects that card
+    if (modalGeminiKeyInput) modalGeminiKeyInput.addEventListener('focus', () => selectCard('gemini'));
+    if (modalGeminiModelSelect) modalGeminiModelSelect.addEventListener('focus', () => selectCard('gemini'));
+    if (modalOpenAIKeyInput) modalOpenAIKeyInput.addEventListener('focus', () => selectCard('openai'));
+    if (modalOpenAIModelSelect) modalOpenAIModelSelect.addEventListener('focus', () => selectCard('openai'));
+
+    // Open Settings Modal
+    if (settingsPill) {
+      settingsPill.addEventListener('click', () => {
+        settingsModal.classList.add('active');
+        updateModalState();
+      });
+    }
+
+    const selectAIBtn = document.getElementById('selectAIBtn');
+    if (selectAIBtn) {
+      selectAIBtn.addEventListener('click', () => {
+        settingsModal.classList.add('active');
+        updateModalState();
+      });
+    }
+
+    if (saveSettingsBtn) {
+      saveSettingsBtn.addEventListener('click', async () => {
+        window.aiService.setProvider(selectedProvider);
+        window.aiService.setGeminiApiKey(modalGeminiKeyInput.value);
+        window.aiService.setGeminiModel(modalGeminiModelSelect.value);
+        window.aiService.setOpenAIApiKey(modalOpenAIKeyInput.value);
+        window.aiService.setOpenAIModel(modalOpenAIModelSelect.value);
+
+        await checkAIServiceStatus();
+        settingsModal.classList.remove('active');
+      });
+    }
+  }
 
   // --- Dynamic FAQ Section Renderer ---
   function renderFAQSection() {
@@ -85,22 +138,64 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // --- Settings Modal ---
-  settingsPill.addEventListener('click', () => settingsModal.classList.add('active'));
-  closeModalBtn.addEventListener('click', () => settingsModal.classList.remove('active'));
+  function selectCard(provider) {
+    selectedProvider = provider;
+    providerCards.forEach(card => {
+      if (card.getAttribute('data-provider') === provider) {
+        card.classList.add('selected');
+      } else {
+        card.classList.remove('selected');
+      }
+    });
+  }
 
-  saveSettingsBtn.addEventListener('click', async () => {
-    const selectedProvider = providerSelect.value;
-    window.aiService.setProvider(selectedProvider);
-    window.aiService.setGeminiApiKey(geminiKeyInput.value);
-    await checkAIServiceStatus();
-    settingsModal.classList.remove('active');
-  });
+  async function updateModalState() {
+    const caps = await window.aiService.checkCapabilities();
+    selectedProvider = caps.activeProvider;
+    selectCard(selectedProvider);
+
+    modalGeminiKeyInput.value = window.aiService.geminiApiKey;
+    modalGeminiModelSelect.value = window.aiService.geminiModel;
+    modalOpenAIKeyInput.value = window.aiService.openaiApiKey;
+    modalOpenAIModelSelect.value = window.aiService.openaiModel;
+
+    // Toggle "Available" status indicators
+    if (caps.windowAI) {
+      badgeWindowAIAvail.classList.add('show');
+    } else {
+      badgeWindowAIAvail.classList.remove('show');
+    }
+
+    if (caps.geminiKey) {
+      badgeGeminiAvail.classList.add('show');
+    } else {
+      badgeGeminiAvail.classList.remove('show');
+    }
+
+    if (caps.openaiKey) {
+      badgeOpenAIAvail.classList.add('show');
+    } else {
+      badgeOpenAIAvail.classList.remove('show');
+    }
+  }
+
+  async function isAIReady() {
+    const caps = await window.aiService.checkCapabilities();
+    if (caps.activeProvider === 'window.ai') {
+      return caps.windowAI;
+    } else if (caps.activeProvider === 'gemini') {
+      return caps.geminiKey;
+    } else if (caps.activeProvider === 'openai') {
+      return caps.openaiKey;
+    } else if (caps.activeProvider === 'mock') {
+      return true;
+    }
+    return false;
+  }
 
   async function checkAIServiceStatus() {
     const caps = await window.aiService.checkCapabilities();
-    providerSelect.value = caps.activeProvider;
-    geminiKeyInput.value = window.aiService.geminiApiKey;
+    const ready = await isAIReady();
 
     if (caps.activeProvider === 'window.ai') {
       if (caps.windowAI) {
@@ -108,14 +203,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         statusText.textContent = 'Chrome Built-in AI';
       } else {
         statusDot.className = 'status-dot';
-        statusText.textContent = 'window.ai (Simulated Fallback)';
+        statusText.textContent = 'Chrome Built-in AI (Not Ready)';
       }
     } else if (caps.activeProvider === 'gemini') {
-      statusDot.className = 'status-dot active';
-      statusText.textContent = 'Gemini API Key Active';
+      if (caps.geminiKey) {
+        statusDot.className = 'status-dot active';
+        statusText.textContent = `Gemini (${window.aiService.geminiModel})`;
+      } else {
+        statusDot.className = 'status-dot';
+        statusText.textContent = 'Gemini API (Key Needed)';
+      }
+    } else if (caps.activeProvider === 'openai') {
+      if (caps.openaiKey) {
+        statusDot.className = 'status-dot active';
+        statusText.textContent = `OpenAI (${window.aiService.openaiModel})`;
+      } else {
+        statusDot.className = 'status-dot';
+        statusText.textContent = 'OpenAI API (Key Needed)';
+      }
     } else {
-      statusDot.className = 'status-dot';
+      statusDot.className = 'status-dot active';
       statusText.textContent = 'Simulator Mode';
+    }
+
+    // Toggle maroon select AI button visibility and process button readiness
+    if (selectAIBtn) {
+      selectAIBtn.style.display = ready ? 'none' : 'block';
+    }
+
+    // Enable processBtn if file is loaded AND AI model is ready
+    if (parsedRawRows && parsedRawRows.length > 0) {
+      processBtn.disabled = !ready;
+    } else {
+      processBtn.disabled = true;
     }
   }
 
@@ -153,7 +273,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function handleSelectedFile(file) {
     try {
       parsedRawRows = await window.fileParser.parseSpreadsheet(file);
-      processBtn.disabled = false;
+      await checkAIServiceStatus();
 
       // Deduplicate file internally and check cache status instantly (non-LLM)
       let cachedCount = 0;
@@ -252,7 +372,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     progressStatusText.textContent = `✅ Successfully processed ${processedCount} posts!`;
-    processBtn.disabled = false;
+    await checkAIServiceStatus();
 
     // Switch to data browser tab
     document.querySelector('[data-tab="dataView"]').click();
@@ -343,6 +463,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       return matchesTopic && matchesSearch;
     });
 
+    // Sort by Topic (Tag) alphabetically, then by Date descending
+    filtered.sort((a, b) => {
+      const topicCompare = (a.topic || '').localeCompare(b.topic || '');
+      if (topicCompare !== 0) return topicCompare;
+      
+      // Secondary sort: Date descending (newest first)
+      const dateA = new Date(a.date || 0);
+      const dateB = new Date(b.date || 0);
+      return dateB - dateA;
+    });
+
     postsTableBody.innerHTML = '';
 
     if (filtered.length === 0) {
@@ -365,10 +496,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       const badgeClass = p.sentiment === 'Positive' ? 'badge-positive' : 
                          p.sentiment === 'Negative' ? 'badge-negative' : 'badge-neutral';
 
-      // Name & Title combined cell (Name links to profile if profileLink exists)
+      // Name & Title combined cell (Uses hyperlink ONLY if Profile column URL exists; otherwise static text)
       const nameHtml = p.profileLink ? 
         `<a href="${escapeHtml(p.profileLink)}" target="_blank" rel="noopener" class="author-name-link">${escapeHtml(p.name)}</a>` :
-        `<strong>${escapeHtml(p.name)}</strong>`;
+        `<strong style="color: var(--text-main);">${escapeHtml(p.name)}</strong>`;
 
       const nameAndTitleHtml = `
         <div style="display: flex; flex-direction: column; gap: 0.2rem;">
@@ -403,7 +534,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td style="white-space: nowrap; font-size: 0.85rem;">${p.date || 'N/A'}</td>
         <td style="max-width: 220px;">${nameAndTitleHtml}</td>
         <td style="max-width: 280px;">${postSummaryHtml}</td>
-        <td style="font-size: 0.825rem; max-width: 180px; word-break: break-all;">${linksHtml}</td>
+        <td style="font-size: 0.825rem; min-width: 110px; white-space: nowrap;">${linksHtml}</td>
         <td>
           <div class="sentiment-cell">
             <div><span class="badge ${badgeClass}">${escapeHtml(p.sentiment)}</span></div>

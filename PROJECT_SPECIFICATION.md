@@ -70,7 +70,7 @@ Located in `js/aiService.js`:
 ```text
 Output MUST be a valid JSON object matching this schema exactly:
 {
-  "topic": "Concise topic group (e.g. AI & Machine Learning, Cloud & Infrastructure, Career & Hiring Opportunities, Product Design & UX, Product Strategy & Leadership, Industry Insights)",
+  "topic": "Concise topic group (e.g. Hiring, Job Search Advice, AI & Machine Learning, Cloud & Infrastructure, Product Design & UX, Product Strategy & Leadership, Industry Insights). IMPORTANT TOPIC RULES: 1. Posts offering actual open jobs/roles MUST have the distinct topic tag 'Hiring'. 2. Posts containing career guidance, resume tips, or job hunting advice without an explicit job opening offered MUST have the topic tag 'Job Search Advice'.",
   "postSummary": "5 to 20 word summary of post content. IMPORTANT HIRING RULE: If this is a hiring/recruitment post, format as 'Hiring [Job Title] at [Company]'",
   "sentiment": "Positive" | "Neutral" | "Negative",
   "sentimentReason": "1-sentence contextual explanation for the sentiment rating"
