@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   }
 
-  // --- Process File & Batch Analyze ---
+  // --- Process File & Batch Analyze with Concurrency ---
   processBtn.addEventListener('click', async () => {
     if (parsedRawRows.length === 0) return;
 
@@ -129,43 +129,47 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let processedCount = 0;
     const total = parsedRawRows.length;
+    const BATCH_SIZE = 3; // Process 3 posts concurrently for 3x-5x speed boost
 
-    for (let i = 0; i < total; i++) {
-      const raw = parsedRawRows[i];
-      const hashId = await window.postStorage.generateHashId(raw.linkToPost, raw.date, raw.name, raw.postText);
+    for (let i = 0; i < total; i += BATCH_SIZE) {
+      const chunk = parsedRawRows.slice(i, i + BATCH_SIZE);
 
-      // Check cache first
-      let cachedPost = await window.postStorage.getPost(hashId);
+      await Promise.all(chunk.map(async (raw, idx) => {
+        const itemIndex = i + idx;
+        const hashId = await window.postStorage.generateHashId(raw.linkToPost, raw.date, raw.name, raw.postText);
 
-      if (!cachedPost) {
-        progressStatusText.textContent = `Analyzing post ${i + 1} of ${total} via AI...`;
-        
-        try {
-          const aiAnalysis = await window.aiService.analyzePost(raw);
-          cachedPost = {
-            id: hashId,
-            date: raw.date,
-            name: raw.name,
-            jobTitle: raw.jobTitle,
-            topic: aiAnalysis.topic || 'Industry Insights',
-            postSummary: aiAnalysis.postSummary || 'Summary unavailable',
-            linkInsidePost: raw.linkInsidePost,
-            linkToPost: raw.linkToPost,
-            sentiment: aiAnalysis.sentiment || 'Neutral',
-            sentimentReason: aiAnalysis.sentimentReason || 'Standard post text.',
-            analyzedAt: new Date().toISOString()
-          };
-          await window.postStorage.savePost(cachedPost);
-        } catch (err) {
-          console.error(`Error analyzing row ${i}:`, err);
+        // Check cache first
+        let cachedPost = await window.postStorage.getPost(hashId);
+
+        if (!cachedPost) {
+          progressStatusText.textContent = `Analyzing posts (${processedCount + 1}/${total}) via AI...`;
+          
+          try {
+            const aiAnalysis = await window.aiService.analyzePost(raw);
+            cachedPost = {
+              id: hashId,
+              date: raw.date,
+              name: raw.name,
+              jobTitle: raw.jobTitle,
+              topic: aiAnalysis.topic || 'Industry Insights',
+              postSummary: aiAnalysis.postSummary || 'Summary unavailable',
+              linkInsidePost: raw.linkInsidePost,
+              linkToPost: raw.linkToPost,
+              sentiment: aiAnalysis.sentiment || 'Neutral',
+              sentimentReason: aiAnalysis.sentimentReason || 'Standard post text.',
+              read: false,
+              analyzedAt: new Date().toISOString()
+            };
+            await window.postStorage.savePost(cachedPost);
+          } catch (err) {
+            console.error(`Error analyzing row ${itemIndex}:`, err);
+          }
         }
-      } else {
-        progressStatusText.textContent = `Loaded post ${i + 1} from cache!`;
-      }
 
-      processedCount++;
-      const percent = Math.round((processedCount / total) * 100);
-      progressBarFill.style.width = `${percent}%`;
+        processedCount++;
+        const percent = Math.round((processedCount / total) * 100);
+        progressBarFill.style.width = `${percent}%`;
+      }));
     }
 
     progressStatusText.textContent = `✅ Successfully processed ${processedCount} posts!`;
@@ -258,12 +262,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     filtered.forEach(p => {
       const tr = document.createElement('tr');
+      if (p.read) {
+        tr.classList.add('row-read');
+      }
 
       const badgeClass = p.sentiment === 'Positive' ? 'badge-positive' : 
                          p.sentiment === 'Negative' ? 'badge-negative' : 'badge-neutral';
 
       const postLinkHtml = p.linkToPost ? 
-        `<a href="${p.linkToPost}" target="_blank" rel="noopener">View Post 🔗</a>` : 'N/A';
+        `<a href="${escapeHtml(p.linkToPost)}" target="_blank" rel="noopener">View Post 🔗</a>` : 'N/A';
+
+      // Format links inside body as clickable <a> tags
+      let linksInsideBodyHtml = 'None';
+      if (p.linkInsidePost && p.linkInsidePost !== 'None') {
+        const urls = p.linkInsidePost.split(',').map(u => u.trim());
+        linksInsideBodyHtml = urls.map(url => {
+          const displayUrl = url.length > 30 ? url.slice(0, 28) + '...' : url;
+          return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="body-link">${escapeHtml(displayUrl)} ↗</a>`;
+        }).join('<br>');
+      }
 
       tr.innerHTML = `
         <td style="white-space: nowrap;">${p.date || 'N/A'}</td>
@@ -273,7 +290,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           <div style="font-weight: 600; margin-bottom: 0.2rem;">${escapeHtml(p.postSummary)}</div>
           <span style="font-size: 0.75rem; background-color: #f1f5f9; padding: 0.1rem 0.4rem; border-radius: 4px;">${escapeHtml(p.topic)}</span>
         </td>
-        <td style="font-size: 0.8rem; word-break: break-all;">${escapeHtml(p.linkInsidePost)}</td>
+        <td style="font-size: 0.8rem; word-break: break-all;">${linksInsideBodyHtml}</td>
         <td style="white-space: nowrap;">${postLinkHtml}</td>
         <td>
           <div class="sentiment-cell">
@@ -281,9 +298,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="sentiment-reason">${escapeHtml(p.sentimentReason)}</div>
           </div>
         </td>
+        <td style="text-align: center; vertical-align: middle;">
+          <input type="checkbox" class="read-checkbox" data-id="${p.id}" ${p.read ? 'checked' : ''}>
+        </td>
       `;
 
       postsTableBody.appendChild(tr);
+    });
+
+    // Add event listeners to Read checkboxes
+    document.querySelectorAll('.read-checkbox').forEach(cb => {
+      cb.addEventListener('change', async (e) => {
+        const postId = e.target.getAttribute('data-id');
+        const isChecked = e.target.checked;
+        
+        const targetPost = await window.postStorage.getPost(postId);
+        if (targetPost) {
+          targetPost.read = isChecked;
+          await window.postStorage.savePost(targetPost);
+          
+          const parentRow = e.target.closest('tr');
+          if (isChecked) {
+            parentRow.classList.add('row-read');
+          } else {
+            parentRow.classList.remove('row-read');
+          }
+        }
+      });
     });
   }
 

@@ -354,8 +354,34 @@ h1, h2, h3, h4, .brand-title {
   border-bottom: none;
 }
 
-.data-table tr:hover td {
-  background-color: #f8fafc;
+.data-table tr.row-read td {
+  background-color: #f1f5f9 !important;
+  color: #94a3b8 !important;
+}
+
+.data-table tr.row-read td strong,
+.data-table tr.row-read td div {
+  color: #94a3b8 !important;
+}
+
+.data-table tr.row-read td a {
+  opacity: 0.6;
+}
+
+.read-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.body-link {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.body-link:hover {
+  text-decoration: underline;
 }
 
 /* Badges */

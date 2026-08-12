@@ -46,7 +46,9 @@ class FileParser {
       return '';
     };
 
-    const date = findValue(['created date', 'date', 'saved date', 'timestamp']) || 'N/A';
+    let rawDate = findValue(['created date', 'date', 'saved date', 'timestamp']) || 'N/A';
+    const date = this.formatDate(rawDate);
+    
     const name = findValue(['author', 'name', 'posted by', 'user']) || 'LinkedIn Member';
     const jobTitle = findValue(['headline', 'job title', 'title', 'position']) || 'N/A';
     const linkToPost = findValue(['post link', 'url', 'link', 'permalink']) || '';
@@ -62,6 +64,33 @@ class FileParser {
       postText,
       linkInsidePost
     };
+  }
+
+  /**
+   * Formats Excel serial numbers (e.g. 46237.777) or raw strings into YYYY-MM-DD
+   */
+  formatDate(val) {
+    if (!val || val === 'N/A') return 'N/A';
+    
+    const num = parseFloat(val);
+    // Excel serial dates typically fall between 30000 (year 1982) and 60000 (year 2064)
+    if (!isNaN(num) && num > 30000 && num < 60000) {
+      const dateObj = XLSX.SSF.parse_date_code(num);
+      if (dateObj) {
+        const yyyy = dateObj.y;
+        const mm = String(dateObj.m).padStart(2, '0');
+        const dd = String(dateObj.d).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+      }
+    }
+    
+    // Attempt standard JS Date parse
+    const parsed = new Date(val);
+    if (!isNaN(parsed.getTime())) {
+      return parsed.toISOString().split('T')[0];
+    }
+
+    return val;
   }
 
   /**

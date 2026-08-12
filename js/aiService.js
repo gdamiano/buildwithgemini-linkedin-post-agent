@@ -35,8 +35,23 @@ class AIService {
   }
 
   async checkCapabilities() {
-    const isWindowAIAvailable = typeof window.ai !== 'undefined' && 
-      (typeof window.ai.languageModel !== 'undefined' || typeof window.ai.summarizer !== 'undefined');
+    let isWindowAIAvailable = false;
+
+    if (typeof LanguageModel !== 'undefined' || typeof window.LanguageModel !== 'undefined') {
+      try {
+        const LM = typeof LanguageModel !== 'undefined' ? LanguageModel : window.LanguageModel;
+        if (typeof LM.availability === 'function') {
+          const avail = await LM.availability({ outputLanguage: 'en' });
+          isWindowAIAvailable = (avail === 'readily' || avail === 'after-download' || avail === true || typeof avail === 'string');
+        } else {
+          isWindowAIAvailable = true;
+        }
+      } catch (e) {
+        isWindowAIAvailable = true; // Class constructor is present
+      }
+    } else if (typeof window.ai !== 'undefined') {
+      isWindowAIAvailable = true;
+    }
 
     return {
       windowAI: isWindowAIAvailable,
@@ -56,38 +71,39 @@ class AIService {
   }
 
   /**
-   * 1. Chrome Built-in AI (window.ai) Adapter
+   * 1. Chrome Built-in AI (LanguageModel / window.ai) Adapter
    */
   async analyzeWithWindowAI(rawPost) {
-    if (typeof window.ai === 'undefined') {
-      console.warn('window.ai not supported in this browser. Falling back to Mock service.');
-      return this.analyzeWithMock(rawPost);
-    }
-
     try {
       let session;
-      if (window.ai.languageModel && typeof window.ai.languageModel.create === 'function') {
+      const promptText = `Post Author: ${rawPost.name} (${rawPost.jobTitle})\nPost Content:\n${rawPost.postText}`;
+
+      // Chrome standard LanguageModel API
+      if (typeof LanguageModel !== 'undefined' || typeof window.LanguageModel !== 'undefined') {
+        const LM = typeof LanguageModel !== 'undefined' ? LanguageModel : window.LanguageModel;
+        session = await LM.create({
+          outputLanguage: 'en',
+          initialPrompts: [{ role: 'system', content: SYSTEM_PROMPT_CONSTRAINTS }]
+        });
+      } else if (typeof window.ai !== 'undefined' && window.ai.languageModel) {
         session = await window.ai.languageModel.create({
           systemPrompt: SYSTEM_PROMPT_CONSTRAINTS
         });
-      } else if (window.ai.createGenericSession) {
-        session = await window.ai.createGenericSession();
       }
 
       if (!session) {
-        throw new Error('Could not instantiate window.ai session');
+        throw new Error('Could not instantiate LanguageModel session');
       }
 
-      const prompt = `Post Author: ${rawPost.name} (${rawPost.jobTitle})\nPost Content:\n${rawPost.postText}`;
-      const responseText = await session.prompt(prompt);
+      const responseText = await session.prompt(promptText);
       
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
-      throw new Error('Failed to parse JSON from window.ai');
+      throw new Error('Failed to parse JSON from LanguageModel');
     } catch (err) {
-      console.error('window.ai analysis failed:', err);
+      console.error('LanguageModel / window.ai analysis failed:', err);
       return this.analyzeWithMock(rawPost);
     }
   }
