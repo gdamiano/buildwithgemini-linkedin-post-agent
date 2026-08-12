@@ -1,61 +1,52 @@
-# Coding Agent Guide
+# 📌 GEMINI.md — Agent Workspace Context & Instructions
 
-## Prerequisites
+This workspace contains the **LinkedIn Saved Post Browser (SPB)** project.
 
-Install the CLI (one-time):
-```bash
-uv tool install google-agents-cli
-```
+> ⚡ **AGENT QUICK CONTEXT:**
+> Read this file and `PROJECT_SPECIFICATION.md` for full context on architecture, file structure, data schemas, and LLM integrations without needing to scan every raw source file.
 
 ---
 
-## Development Phases
+## 1. Quick Project Overview
 
-### Phase 1: Understand Requirements
-Before writing any code, understand the project's requirements, constraints, and success criteria.
-
-### Phase 2: Build and Implement
-Implement agent logic in `app/`. Use `agents-cli playground` for interactive testing. Iterate based on user feedback.
-
-### Phase 3: The Evaluation Loop (Main Iteration Phase)
-Start with 1-2 eval cases, run `agents-cli eval generate`, then `agents-cli eval grade`, iterate by making changes and rerunning both commands until satisfied. Expect 5-10+ iterations. Once you have a baseline, reach for `agents-cli eval compare` (regression diffs), `agents-cli eval analyze` (cluster failure modes), and `agents-cli eval optimize` (auto-tune prompts). See the **Evaluation Guide** for metrics, dataset schema, LLM-as-judge config, and common gotchas.
-
-### Phase 4: Pre-Deployment Tests
-Run `uv run pytest tests/unit tests/integration`. Fix issues until all tests pass.
-
-### Phase 5: Deploy to Dev
-**Requires explicit human approval.** Run `agents-cli deploy` only after user confirms. See the **Deployment Guide** for details.
-
-### Phase 6: Production Deployment
-Ask the user: Option A (simple single-project) or Option B (full CI/CD pipeline with `agents-cli infra cicd`).
-
-## Development Commands
-
-| Command | Purpose |
-|---------|---------|
-| `agents-cli playground` | Interactive local testing |
-| `uv run pytest tests/unit tests/integration` | Run unit and integration tests |
-| `agents-cli eval dataset synthesize` | Synthesize multi-turn eval scenarios for your agent |
-| `agents-cli eval generate` | Run agent on eval dataset, produce traces |
-| `agents-cli eval grade` | Run agent evaluations on the traces |
-| `agents-cli eval compare` | Compare two grade-results files (regression check) |
-| `agents-cli eval analyze` | Cluster failure modes from grade results |
-| `agents-cli eval metric list` | List built-in metrics available in the SDK |
-| `agents-cli eval optimize` | Auto-tune agent prompts using eval data |
-| `agents-cli lint` | Check code quality |
-| `agents-cli infra single-project` | Set up project infrastructure (Terraform) |
-| `agents-cli deploy` | Deploy to dev |
-| `agents-cli scaffold enhance` | Add deployment target or CI/CD to project |
-| `agents-cli scaffold upgrade` | Upgrade project to latest version |
+- **App Name:** LinkedIn Saved Post Browser (SPB)
+- **Tech Stack:** Vanilla HTML5, CSS3, ES6 JavaScript, `SheetJS` (CSV/XLSX), `IndexedDB` storage.
+- **Hosting Target:** GitHub Pages ($0 cost, client-side static SPA).
+- **Primary AI Engine:** Chrome Built-in AI (`window.LanguageModel` / Gemini Nano on-device).
+- **Secondary AI Engine:** Google Gemini REST API (`gemini-2.5-flash` via user's API Key).
 
 ---
 
-## Operational Guidelines for Coding Agents
+## 2. Key File Directory
 
-- **Code preservation**: Only modify code directly targeted by the user's request. Preserve all surrounding code, config values (e.g., `model`), comments, and formatting.
-- **NEVER change the model** unless explicitly asked.
-- **Model 404 errors**: Fix `GOOGLE_CLOUD_LOCATION` (e.g., `global` instead of `us-east1`), not the model name.
-- **ADK tool imports**: Import the tool instance, not the module: `from google.adk.tools.load_web_page import load_web_page`
-- **Run Python with `uv`**: `uv run python script.py`. Run `agents-cli install` first.
-- **Stop on repeated errors**: If the same error appears 3+ times, fix the root cause instead of retrying.
-- **Terraform conflicts** (Error 409): Use `terraform import` instead of retrying creation.
+| File Path | Description & Purpose |
+| :--- | :--- |
+| **`index.html`** | Main Single Page Application structure (Navbar, Analyze File tab, Browse Posts tab, Settings & Category Edit modals). |
+| **`css/styles.css`** | Complete design system (Colors, side-by-side grid, topic chips, badges, modals, FAQ accordion). |
+| **`faqConfig.js`** | Plain-text array configuration for FAQ questions and answers. |
+| **`js/storage.js`** | `IndexedDB` manager (`SPB_PostStore`) + 16-char SHA-256 deduplication hashing. |
+| **`js/fileParser.js`** | `SheetJS` spreadsheet reader, Excel date code converter, and body link Regex extractor. |
+| **`js/aiService.js`** | Pluggable LLM adapter (`LanguageModel`, Gemini REST API, Mock simulator). |
+| **`js/app.js`** | Main UI controller, parallel batching (size=3), search filtering, TOC chips, and table rendering. |
+| **`PROJECT_SPECIFICATION.md`** | Comprehensive architectural and 8-column data schema specification. |
+
+---
+
+## 3. Core Technical Conventions
+
+1. **8-Column Table Layout:**
+   `Date` | `Name & Title` | `Post Summary` | `Links` | `Sentiment & Analysis` | `Read` | `Star` | `Edit`
+2. **Hiring Post Constraint:**
+   Any recruitment post summary MUST follow format: `"Hiring [Job Title] at [Company]"`.
+3. **Data Caching:**
+   Posts are hashed as `post_link|author|date` and saved in `IndexedDB`. Never re-query AI for cached hashes.
+4. **Concurrency:**
+   `app.js` runs batch analysis in parallel promises of 3 (`BATCH_SIZE = 3`).
+
+---
+
+## 4. Git & Milestone References
+
+- **Original GCP Prototype Release:** `v0.1.0-gcp-prototype`
+- **Original GCP Archive Branch:** `archive/original-gcp-prototype`
+- **Main Production Branch:** `main`
