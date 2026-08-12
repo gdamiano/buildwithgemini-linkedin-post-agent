@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const totalPostsCount = document.getElementById('totalPostsCount');
   const exportCsvBtn = document.getElementById('exportCsvBtn');
   const exportXlsxBtn = document.getElementById('exportXlsxBtn');
+  const faqAccordionContainer = document.getElementById('faqAccordionContainer');
   
   // Settings & Modal
   const settingsPill = document.getElementById('settingsPill');
@@ -36,8 +37,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentFilterTopic = 'All';
 
   // --- Initial Setup ---
+  renderFAQSection();
   await checkAIServiceStatus();
   await loadAndRenderPosts();
+
+  // --- Dynamic FAQ Section Renderer ---
+  function renderFAQSection() {
+    if (!faqAccordionContainer || !window.FAQ_CONFIG) return;
+    faqAccordionContainer.innerHTML = '';
+
+    window.FAQ_CONFIG.forEach((faqItem, index) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = 'faq-item';
+      itemEl.innerHTML = `
+        <div class="faq-question">
+          <span style="font-weight: 600;">Q. ${escapeHtml(faqItem.question)}</span>
+          <span class="faq-toggle-icon">▼</span>
+        </div>
+        <div class="faq-answer">
+          <div>${faqItem.answer}</div>
+        </div>
+      `;
+
+      const questionEl = itemEl.querySelector('.faq-question');
+      questionEl.addEventListener('click', () => {
+        const isOpen = itemEl.classList.contains('active');
+        // Close all other FAQ items for a clean accordion effect
+        document.querySelectorAll('.faq-item').forEach(el => el.classList.remove('active'));
+        if (!isOpen) {
+          itemEl.classList.add('active');
+        }
+      });
+
+      faqAccordionContainer.appendChild(itemEl);
+    });
+  }
 
   // --- Tab Navigation ---
   navTabs.forEach(tab => {

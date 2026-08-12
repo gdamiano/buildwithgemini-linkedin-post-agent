@@ -48,12 +48,23 @@
     
     <!-- Tab 1: Import & File Ingestion View -->
     <section class="tab-view active" id="importView">
+      
+      <!-- 2-Line Introductory Header -->
+      <div style="text-align: center; max-width: 780px; margin: 0 auto 2rem auto;">
+        <h2 style="font-size: 1.15rem; font-weight: 600; color: var(--text-main); margin-bottom: 0.35rem; line-height: 1.4;">
+          The <strong>Saved Post Browser</strong> sorts LinkedIn posts into a categorized directory.
+        </h2>
+        <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.5;">
+          It uses LLM AI to analyze post text, and your browser holds the data so you can come back without regenerating the list.
+        </p>
+      </div>
+
       <div class="side-by-side-grid">
         
         <!-- Step 1 Box -->
         <div class="card step-card">
           <div>
-            <h2 class="card-title">🚀 Step 1: Ingest Saved Posts Spreadsheet</h2>
+            <h2 class="card-title">📊 Step 1: Ingest Saved Posts Spreadsheet</h2>
             <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
               Upload a <code>.csv</code> or <code>.xlsx</code> file containing your exported saved posts. The browser will auto-match date, author, headline, link, and post body columns.
             </p>
@@ -114,6 +125,14 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- Configurable Accordion FAQ Section -->
+      <div style="margin-top: 3.5rem;">
+        <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--bg-dark); margin-bottom: 1.25rem;">FAQ</h2>
+        <div id="faqAccordionContainer" style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <!-- FAQ entries rendered dynamically from faqConfig.js -->
+        </div>
       </div>
     </section>
 
@@ -236,6 +255,7 @@
   </footer>
 
   <!-- App JavaScript Modules -->
+  <script src="faqConfig.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/fileParser.js"></script>
   <script src="js/aiService.js"></script>
