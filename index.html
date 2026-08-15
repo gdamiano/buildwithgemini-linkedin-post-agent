@@ -27,20 +27,16 @@
     <a href="#" class="brand">
       <img src="blue_pin.png" alt="Blue Pin" style="width: 32px; height: 32px; object-fit: contain;">
       <span class="brand-title">LinkedIn Saved Post Browser</span>
-      <span class="brand-tag">SPB v1.0</span>
     </a>
 
-    <div class="nav-controls">
-      <div class="nav-tabs">
-        <button class="nav-tab active" data-tab="importView">📊 Analyze File</button>
-        <button class="nav-tab" data-tab="dataView">📑 Browse Posts</button>
-      </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="importView">📊 Analyze File</button>
+      <button class="nav-tab" data-tab="dataView">📑 Browse Posts</button>
+    </div>
 
-      <div class="ai-status-pill" id="settingsPill" title="Click to view AI Engine settings">
-        <span class="status-dot" id="statusDot"></span>
-        <span id="statusText">Checking AI Engine...</span>
-        <span>⚙️</span>
-      </div>
+    <div class="nav-controls">
+      <button class="btn btn-danger" id="resetBtn" style="padding: 0.45rem 0.85rem; font-size: 0.825rem; font-weight: 600;">Clear Saved Data 🗑️</button>
+      <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">Version 1.1</span>
     </div>
   </header>
 
@@ -59,77 +55,104 @@
         </p>
       </div>
 
-      <div class="side-by-side-grid">
-        
-        <!-- Step 1 Box -->
-        <div class="card step-card">
-          <div>
-            <h2 class="card-title">📊 Step 1: Ingest Saved Posts Spreadsheet</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0.5rem;">
-              Upload a <code>.csv</code> or <code>.xlsx</code> file containing your exported saved posts. The browser will auto-match date, author, headline, link, and post body columns.
-            </p>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
-              💡 Use <a href="https://chromewebstore.google.com/detail/linkedin-saved-posts-expo/fcpdebjamdlbegjmaecakjcpjafgibkm" target="_blank" rel="noopener" style="color: var(--primary); font-weight: 600; text-decoration: underline;">LinkedIn Saved Posts Exporter</a> to create the file.
-            </p>
+      <div class="steps-stack">
+        <!-- Step 1 -->
+        <div class="step-card-wide" id="step1Card">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div>
+              <div class="step-instruction">
+                <strong>Add the scan button</strong> to your Bookmark Bar.
+              </div>
+              <div class="step-sub-instruction">
+                Press Ctrl + Shift + B if you can't see the bookmarks bar.
+              </div>
+            </div>
           </div>
-
-          <div class="dropzone" id="dropzone">
-            <div class="dropzone-icon">📁</div>
-            <div class="dropzone-title">Drag & drop your LinkedIn export file here</div>
-            <div class="dropzone-desc">Supports .CSV, .XLSX, and .XLS files (Parsed 100% locally on device)</div>
-            <input type="file" id="fileInput" accept=".csv, .xlsx, .xls" style="display: none;">
+          <div class="step-action">
+            <span class="drag-hint">Click and drag this to the Bookmarks bar</span>
+            <a href="#" id="bookmarkletLink" class="btn btn-primary" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); padding: 0.6rem 1.25rem; font-size: 0.875rem; font-weight: 700; text-decoration: none; cursor: grab;" onclick="event.preventDefault(); alert('Drag this button directly to your browser\'s Bookmarks Bar!');">
+              Collect Saved P...
+            </a>
           </div>
+        </div>
 
-          <div id="filePreviewCard" style="display: none; margin-top: 1rem; padding: 0.85rem; background-color: #f1f5f9; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-            <div style="font-weight: 700; color: var(--text-main); font-size: 0.95rem; margin-bottom: 0.25rem;" id="previewFileName"></div>
-            <div style="display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; color: var(--text-muted);">
-              <span>📊 Total Rows Found: <strong id="previewTotalRows" style="color: var(--primary);">0</strong></span>
-              <span>🔍 Unique New Rows: <strong id="previewUniqueRows" style="color: var(--badge-positive-text);">0</strong></span>
-              <span>💾 Cached Rows: <strong id="previewCachedRows">0</strong></span>
+        <!-- Step 2 -->
+        <div class="step-card-wide" id="step2Card">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-instruction">
+              Open the LinkedIn saved posts page and <strong>press the scan button bookmark</strong>.
+            </div>
+          </div>
+          <div class="step-action">
+            <a href="https://www.linkedin.com/my-items/saved-posts/" target="_blank" rel="noopener" class="btn-link">Open LinkedIn</a>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-card-wide step-card-vertical" id="step3Card">
+          <div class="step-row-main">
+            <div style="display: flex; align-items: center;">
+              <div class="step-num">3</div>
+              <div class="step-instruction">
+                Select the saved file.
+              </div>
+            </div>
+            <input type="file" id="fileInput" accept=".csv, .xlsx, .xls, .json" style="display: none;">
+            <button class="btn btn-secondary" id="chooseFileBtn">Choose a save file</button>
+          </div>
+          <div class="step-row-controls" id="filePreviewCard" style="display: none; justify-content: space-between; width: 100%;">
+            <div class="control-item">
+              <span class="control-label" style="font-weight: normal; color: var(--text-muted);">File:</span>
+              <strong id="previewFileName" style="color: var(--text-main); font-size: 0.9rem;">reallylongfilename.json (97.9 KB)</strong>
+            </div>
+            <div class="control-item model-stats">
+              Rows: <strong id="previewTotalRows">0</strong> &nbsp;|&nbsp; New Posts: <strong id="previewUniqueRows" style="color: var(--badge-positive-text);">0</strong>
+              <span id="previewCachedRows" style="display: none;">0</span>
             </div>
           </div>
         </div>
 
-        <!-- Step 2 Box -->
-        <div class="card step-card">
-          <div>
-            <h2 class="card-title">✨ Step 2: Process & Categorize Posts</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
-              Each row will be hashed and checked against browser storage. Already-processed posts are restored instantly with zero LLM token consumption.
-            </p>
-
-            <div class="form-group" style="margin-bottom: 1.25rem;">
-              <label class="form-label" for="maxRowsInput">Max Rows to Process (LLM Limit)</label>
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <input type="number" class="form-input" id="maxRowsInput" min="1" placeholder="e.g. 20 (Leave blank for all)">
-                <span style="font-size: 0.8rem; color: var(--text-muted); white-space: nowrap;">rows</span>
+        <!-- Step 4 -->
+        <div class="step-card-wide step-card-vertical" id="step4Card">
+          <div class="step-row-main">
+            <div style="display: flex; align-items: center;">
+              <div class="step-num">4</div>
+              <div class="step-instruction">
+                Run the processor.
               </div>
-              <p style="font-size: 0.775rem; color: var(--text-muted); margin-top: 0.35rem;">
-                Filters duplicates first, then stops after processing the specified limit.
-              </p>
             </div>
+            <button class="btn btn-primary" id="processBtn" disabled>Process Posts</button>
           </div>
-
-          <div>
-            <div id="progressContainer" style="display: none; margin-bottom: 1rem;">
-              <div id="progressStatusText" style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.4rem;">Analyzing posts...</div>
-              <div class="progress-bar-container">
-                <div class="progress-bar-fill" id="progressBarFill"></div>
-              </div>
-            </div>
-
-            <div style="margin-top: 1rem;">
-              <button class="btn btn-maroon" id="selectAIBtn" style="width: 100%; margin-bottom: 0.75rem;">
-                Select an AI model to process posts ⚙️
+          <div class="step-row-controls">
+            <div class="control-item">
+              <span class="control-label">Use this AI:</span>
+              <button class="ai-settings-btn" id="aiSettingsBtn" title="Click to configure AI engine settings">
+                <span class="status-dot" id="statusDot"></span>
+                <span id="statusText">Checking AI Engine...</span>
+                <span>⚙️</span>
               </button>
-              <div style="display: flex; gap: 1rem;">
-                <button class="btn btn-primary" id="processBtn" style="flex: 1;" disabled>Process Selected File ✨</button>
-                <button class="btn btn-danger" id="resetBtn">Clear Saved Data 🗑️</button>
-              </div>
+            </div>
+            
+            <div class="control-item">
+              <label for="maxRowsInput" class="control-label">Row limit:</label>
+              <input type="number" id="maxRowsInput" class="form-input-inline" placeholder="Enter a number of rows">
+            </div>
+
+            <div class="control-item model-stats">
+              Speed: <strong id="modelSpeed">Slow</strong> &nbsp;|&nbsp; Cost: <strong id="modelCost">None</strong>
             </div>
           </div>
         </div>
+      </div>
 
+      <!-- Progress Container -->
+      <div id="progressContainer" style="display: none; margin-top: 1.5rem; padding: 1.25rem; background-color: #f1f5f9; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+        <div id="progressStatusText" style="font-size: 0.875rem; font-weight: 600; margin-bottom: 0.4rem;">Analyzing posts...</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" id="progressBarFill"></div>
+        </div>
       </div>
 
       <!-- Configurable Accordion FAQ Section -->
@@ -367,15 +390,20 @@
     </div>
   </div>
 
+
+
   <footer>
     <p>LinkedIn Saved Post Browser (SPB) &bull; Privacy-first, zero-cost static app &bull; All data stays local in browser</p>
   </footer>
 
   <!-- App JavaScript Modules -->
   <script src="faqConfig.js"></script>
+  <script src="aiConfig.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/fileParser.js"></script>
   <script src="js/aiService.js"></script>
+  <script src="js/extensionBridge.js"></script>
+  <script src="js/bookmarklet.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

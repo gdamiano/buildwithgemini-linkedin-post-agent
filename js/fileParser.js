@@ -11,6 +11,24 @@ class FileParser {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
+      // Check if file is JSON
+      if (file.name.endsWith('.json') || file.type === 'application/json') {
+        reader.onload = (e) => {
+          try {
+            const rawJson = JSON.parse(e.target.result);
+            const arrayData = Array.isArray(rawJson) ? rawJson : [rawJson];
+            const normalizedRows = arrayData.map(row => this.normalizeRow(row));
+            resolve(normalizedRows);
+          } catch (error) {
+            reject(new Error('Invalid JSON format: ' + error.message));
+          }
+        };
+        reader.onerror = (error) => reject(error);
+        reader.readAsText(file);
+        return;
+      }
+
+      // Default spreadsheet path (CSV/XLSX)
       reader.onload = (e) => {
         try {
           const data = new Uint8Array(e.target.result);
@@ -37,6 +55,16 @@ class FileParser {
   normalizeRow(row) {
     const findValue = (possibleKeys) => {
       const keys = Object.keys(row);
+      
+      // 1. Check for exact matches first (prevents substring collisions like "Name & Title" matching "name")
+      for (const key of keys) {
+        const cleanKey = key.trim().toLowerCase();
+        if (possibleKeys.some(p => cleanKey === p)) {
+          return String(row[key] || '').trim();
+        }
+      }
+
+      // 2. Fall back to substring match
       for (const key of keys) {
         const lowerKey = key.trim().toLowerCase();
         if (possibleKeys.some(p => lowerKey.includes(p))) {
