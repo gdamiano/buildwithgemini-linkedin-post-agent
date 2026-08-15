@@ -7,16 +7,22 @@
 
 (function () {
   function buildBookmarkletCode() {
-    const targetOrigin = window.location.origin;
+    const targetOrigin = window.location.origin + window.location.pathname;
 
     const rawScript = `(function(){
+  if (window.location.href.indexOf('linkedin.com/my-items/saved-posts') === -1) {
+    alert('Opening your LinkedIn Saved Posts page! Once the page loads completely, click this bookmarklet again to start collecting.');
+    window.open('https://www.linkedin.com/my-items/saved-posts/', '_blank');
+    return;
+  }
+
   if(window.__SPB_COLLECTOR_ACTIVE__){
     alert('SPB Collector is already running on this page!');
     return;
   }
   window.__SPB_COLLECTOR_ACTIVE__ = true;
 
-  const targetOrigin = window.location.origin + window.location.pathname;
+  var TARGET_ORIGIN = "${targetOrigin}";
 
   var overlay = document.createElement('div');
   overlay.id = 'spb-bookmarklet-overlay';
