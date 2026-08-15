@@ -49,19 +49,20 @@ Every processed post is normalized into an 8-column schema stored in `IndexedDB`
 
 ```
 buildwithgemini-linkedin-post-agent/
-├── index.html         # Main SPA layout (Navbar, Ingest Posts tab, Browse Directory tab, Settings & Edit modals)
+├── index.html         # Main SPA layout (Navbar, Step-by-step Analyze view, Browse Directory tab, Settings & Edit modals)
 ├── favicon.ico        # 32x32 ICO favicon
 ├── blue_pin.png       # High-res blue pushpin logo and tab icon asset
 ├── faqConfig.js       # Editable FAQ questions & answers array (easily editable in any text editor)
+├── aiConfig.js        # Editable AI speed/cost ratings and display names configuration array
 ├── css/
-│   └── styles.css     # Design system (Colors, 2-column side-by-side grid, topic chips, badges, modals, FAQ accordion)
+│   └── styles.css     # Design system (Colors, vertical steps stack layout, badges, modals, centered page selectors)
 └── js/
     ├── storage.js          # IndexedDB manager (`SPB_PostStore`), SHA-256 deduplication hash generator
     ├── fileParser.js       # SheetJS parser for CSV/XLSX/XLS/JSON, Excel date code converter, body URL Regex extractor
     ├── aiService.js        # Pluggable LLM adapter (Gemini on-device, Gemini/OpenAI cloud keys, Mock simulator)
-    ├── extensionBridge.js  # postMessage bridge manager for Chrome Extension interaction & Collect Posts Wizard
+    ├── extensionBridge.js  # postMessage bridge manager for Chrome Extension interaction
     ├── bookmarklet.js      # 1-Click Bookmarklet code generator with multi-container scrolling & DOM collector overlay
-    └── app.js              # Main UI controller, Collect Posts Wizard modal, parallel batching, URL parameters importer
+    └── app.js              # Main UI controller, step progress trackers, parallel batching, URL parameters importer
 ```
 
 ---
@@ -88,7 +89,7 @@ Output MUST be a valid JSON object matching this schema exactly:
 2. **Instant Non-LLM File Preview:** Ingesting a file instantly calculates total, unique, and cached rows before any LLM calls start.
 3. **Max Row Processing Limit:** Allows users to cap LLM execution (e.g., process top 20 rows of a 50-row file).
 4. **Zero-Step URL Query Transfer:** Bookmarklet automatically encodes and transfers small datasets directly to the app via URL query string, saving file downloading steps.
-5. **Robust DOM-Scraping Selectors:** Bookmarklet uses text-length inspections and layout checks to capture 100% of posts under various viewport configurations, including posts containing embeds.
+5. **Robust DOM-Collection Selectors:** Bookmarklet uses text-length inspections and layout checks to capture 100% of posts under various viewport configurations, including posts containing embeds.
 6. **Smart Scroll Targets:** Automatically scrolls both window and nested layouts (e.g., `.scaffold-layout__main`) to trigger lazy-loaded items under different LinkedIn DOM updates.
 
 ---
