@@ -3,6 +3,24 @@
  * Handles UI interactions, tab switching, drag-drop ingestion, table rendering, and search filtering.
  */
 
+// --- Analytics Configuration ---
+// Set this to your Cloudflare Worker URL (e.g. 'https://spb-analytics.yourusername.workers.dev')
+const TRACKING_URL = '';
+
+async function trackEvent(eventName, count = 0) {
+  if (!TRACKING_URL) return; // Silent return if tracking is not configured
+  try {
+    const url = new URL(`${TRACKING_URL}/event`);
+    url.searchParams.set('name', eventName);
+    url.searchParams.set('count', count.toString());
+    
+    // Fire background request to log the event
+    fetch(url.toString(), { mode: 'cors' }).catch(err => console.warn('Analytics network error:', err));
+  } catch (err) {
+    console.warn('Analytics error:', err);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   // DOM Elements
   const navTabs = document.querySelectorAll('.nav-tab');
@@ -483,6 +501,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       rowsToProcess = parsedRawRows.slice(0, rowLimit);
     }
 
+    // Track the process click with the count of rows being processed
+    trackEvent('process_file_click', rowsToProcess.length);
+
     isProcessing = true;
     isPaused = false;
     processBtn.disabled = false;
@@ -746,13 +767,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Combined Links column (Post link + embedded body links)
       let linksList = [];
       if (p.linkToPost) {
-        linksList.push(`• <a href="${escapeHtml(p.linkToPost)}" target="_blank" rel="noopener" class="body-link">Post ↗</a>`);
+        linksList.push(`• <a href="${escapeHtml(p.linkToPost)}" target="_blank" rel="noopener" class="body-link" data-link-type="post">Post ↗</a>`);
       }
       if (p.linkInsidePost && p.linkInsidePost !== 'None') {
         const urls = p.linkInsidePost.split(',').map(u => u.trim());
         urls.forEach(url => {
           const displayUrl = url.length > 25 ? url.slice(0, 23) + '...' : url;
-          linksList.push(`• <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="body-link">${escapeHtml(displayUrl)} ↗</a>`);
+          linksList.push(`• <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="body-link" data-link-type="embed">${escapeHtml(displayUrl)} ↗</a>`);
         });
       }
       const linksHtml = linksList.length > 0 ? linksList.join('<br>') : '<span style="color: var(--text-muted);">None</span>';
@@ -835,6 +856,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         await openCategoryEditModal(postId);
       });
     });
+
+    // Add event listener to delegate body-link clicks for analytics
+    if (postsTableBody) {
+      postsTableBody.addEventListener('click', async (e) => {
+        const link = e.target.closest('a');
+        if (link && link.classList.contains('body-link')) {
+          const type = link.getAttribute('data-link-type');
+          const eventName = type === 'post' ? 'linkedin_post_link_click' : 'linkedin_embed_link_click';
+          
+          let savedPostsCount = 0;
+          try {
+            const allPosts = await window.postStorage.getAllPosts();
+            savedPostsCount = allPosts.length;
+          } catch (err) {
+            console.warn('Failed to retrieve post count for analytics', err);
+          }
+          
+          trackEvent(eventName, savedPostsCount);
+        }
+      });
+    }
   }
 
   // --- Category Edit Modal Logic ---

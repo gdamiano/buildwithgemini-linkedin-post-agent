@@ -24,6 +24,7 @@
 ### VERSION 1.1 | Decouple from 3rd-party extension | outcome = ready to post / share wide
 - [x] Bookmarklet method to farm links, to replace manual LI page scrolling and 3rd party installs
 - [x] Remake FE to reflect new bookmarklet flow
+- [ ] (stretch) Analytics?
 
 ## PHASE 3 | LIVE AND SHARED
 
@@ -34,3 +35,4 @@
 - [ ] Phrasing and UX of browser tags and search
 - [ ] How does this read & process on mobile?
 - [ ] Accessing your posts across desktop and mobile
+- [ ] Email reminder digest ... how does this start turning into a better AI feed?
