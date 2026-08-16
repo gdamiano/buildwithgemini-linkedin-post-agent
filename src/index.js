@@ -140,6 +140,30 @@ export default {
       }
     }
 
+    // Route: /debug
+    if (url.pathname === "/debug") {
+      let cooldownCount = 0;
+      try {
+        const cooldownCheck = await env.DB.prepare(
+          "SELECT COUNT(*) as count FROM analytics_events WHERE created_at > datetime('now', '-1 hour')"
+        ).first();
+        cooldownCount = cooldownCheck ? cooldownCheck.count : 0;
+      } catch (err) {
+        cooldownCount = "Database Error: " + err.message;
+      }
+
+      return new Response(JSON.stringify({
+        has_webhook_url: !!env.DISCORD_WEBHOOK_URL,
+        has_user_id: !!env.DISCORD_USER_ID,
+        webhook_url_length: env.DISCORD_WEBHOOK_URL ? env.DISCORD_WEBHOOK_URL.length : 0,
+        cooldown_events_last_hour: cooldownCount,
+        database_bound: !!env.DB
+      }, null, 2), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
+      });
+    }
+
     return new Response("Not Found", { status: 404, headers: corsHeaders });
   }
 };
