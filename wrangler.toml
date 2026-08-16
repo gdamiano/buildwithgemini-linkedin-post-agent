@@ -1,4 +1,4 @@
-name = "buildwithgemini-linkedin-post-agent"
+name = "spb-analytics-db"
 main = "src/index.js"
 compatibility_date = "2024-03-03"
 
