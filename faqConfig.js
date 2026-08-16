@@ -42,10 +42,14 @@ window.FAQ_CONFIG = [
   },
   {
     question: "Why was this app made?",
-    answer: "The creator, Greg, keeps saving LinkedIn posts... dozens of posts. Too many posts! Greg just wants to find the topics he saved, but the LinkedIn site doesn't have many sorting features.<br></br>This app was created to give LinkedIn users the added value of organizing their save posts without manual steps or long reads."
+    answer: "I keep saving LinkedIn posts to build a knowledge base for nice tips... I just broke 200, which I'm sure is tiny compared to some peoples' collections! When I want to find those tips, the ones I want will be buried under page loads and long scrolling, and the LinkedIn site doesn't have many sorting features.<br></br>I made this app to give LinkedIn users the value of finding and reviewing the posts they need without losing time to painful scanning."
   },
   {
     question: "Was this app made in a hackathon?",
     answer: "Yes! A first edition was built at the 'Build With Google' Gemini training seminar, as part of a 2-hour challenge to build and present."
+  },
+  {
+	question: "Does this app track me?",
+	answer: "It does not track you.<br></br>This app uses Cloudflare ONLY to count two actions the site takes; it NEVER identifies, follows or tracks a visitor or your information.<br></br>If you're curious, I watch the number of times links to LinkedIn posts are clicked, as this is the ultimate purpose for the app, and I also watch the number of times the 'process file' button is pressed. These are the two 'funnel steps' in the user journey that I consider signs that the app is giving users value."
   }
 ];

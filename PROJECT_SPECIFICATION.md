@@ -100,3 +100,32 @@ The original cloud-native Python/FastAPI/Firestore prototype is preserved in:
 - **GitHub Release Tag:** `v0.1.0-gcp-prototype`
 - **Archive Branch:** `archive/original-gcp-prototype`
 - **Stable Bookmarklet Snapshot:** `v0.2.0-manual-import-stable` (Tag snapshot before direct URL parameters extraction)
+
+---
+
+## 8. Analytics & Telemetry (Cloudflare Workers + D1 Database)
+
+To preserve privacy-first values with $0 infrastructure, custom interaction analytics are decoupled from page-view tracking and managed via a serverless event logging architecture.
+
+### Cross-Product Architecture Flow
+```mermaid
+graph TD
+    User([User Browser]) -->|1. Loads SPA| Pages[GitHub Pages]
+    User -->|2. Fires event request /event| Worker[Cloudflare Worker]
+    Worker -->|3. Commits event record| D1[(Cloudflare D1 SQL)]
+    Worker -->|4. Checks 1-hour cooldown| D1
+    Worker -->|5. If cooldown met, pings Webhook| Discord[Discord Channel]
+```
+
+### Telemetry Specifications
+1. **Infrastructure**: Cloudflare Worker connected to a Cloudflare D1 Serverless SQL Database.
+2. **Tracked Events**:
+   * `process_file_click`: Fired when starting AI analysis. Payload includes the count of posts to be processed.
+   * `linkedin_post_link_click`: Fired when a user clicks the original post URL. Payload includes the user's total saved post count from `IndexedDB`.
+   * `linkedin_embed_link_click`: Fired when a user clicks an embedded link inside a post. Payload includes the user's total saved post count from `IndexedDB`.
+3. **Privacy & Spam Mitigation**:
+   * **Cookie-less & GDPR-compliant**: No personal information, IP addresses, or tracking cookies are written to the database or client storage.
+   * **1-Hour Alert Cooldown**: When logging an event, the Worker queries D1 for event occurrences in the last hour. If `count > 1`, the Discord webhook notification is skipped, preventing channel spam while preserving accurate aggregate logs.
+4. **Data Access**:
+   * Protected `/report?key=SECRET` endpoint returns daily event tallies and overall averages in JSON format.
+
