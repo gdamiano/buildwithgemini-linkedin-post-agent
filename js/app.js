@@ -5,7 +5,7 @@
 
 // --- Analytics Configuration ---
 // Set this to your Cloudflare Worker URL (e.g. 'https://spb-analytics.yourusername.workers.dev')
-const TRACKING_URL = '';
+const TRACKING_URL = 'https://buildwithgemini-linkedin-post-agent.greg-damiano.workers.dev';
 
 async function trackEvent(eventName, count = 0) {
   if (!TRACKING_URL) return; // Silent return if tracking is not configured
