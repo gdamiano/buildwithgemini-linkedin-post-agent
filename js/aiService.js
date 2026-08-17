@@ -69,11 +69,17 @@ class AIService {
   }
 
   async analyzePost(rawPost) {
-    if (this.currentProvider === 'window.ai') {
+    const caps = await this.checkCapabilities();
+    let provider = this.currentProvider;
+    if (provider === 'window.ai' && !caps.windowAI) {
+      provider = 'mock'; // Runtime fallback if selected but unavailable in this browser
+    }
+
+    if (provider === 'window.ai') {
       return this.analyzeWithWindowAI(rawPost);
-    } else if (this.currentProvider === 'gemini') {
+    } else if (provider === 'gemini') {
       return this.analyzeWithGeminiAPI(rawPost);
-    } else if (this.currentProvider === 'openai') {
+    } else if (provider === 'openai') {
       return this.analyzeWithOpenAIAPI(rawPost);
     } else {
       return this.analyzeWithMock(rawPost);

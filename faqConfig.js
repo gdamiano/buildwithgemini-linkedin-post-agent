@@ -14,7 +14,7 @@ window.FAQ_CONFIG = [
   },
   {
     question: "What if I want to share a question, suggestion, problem or compliment?",
-    answer: "Let me know what you think! https://www.linkedin.com/in/gregorydamiano/"
+    answer: "Let me know what you think! <a href='https://www.linkedin.com/in/gregorydamiano/' target='_blank' rel='noopener' style='color: var(--primary); font-weight: 600; text-decoration: underline;'>Find me on LinkedIn</a> (of course!)"
   },
   {
     question: "How do I create a CSV or Excel file of my saved LinkedIn posts?",

@@ -67,7 +67,46 @@ document.addEventListener('DOMContentLoaded', async () => {
   let isProcessing = false;
   let isPaused = false;
 
+  // --- Browser Detection & Customization ---
+  function detectBrowser() {
+    const ua = navigator.userAgent;
+    if (ua.includes("Firefox") && !ua.includes("Seamonkey")) {
+      return "Firefox";
+    } else if (ua.includes("Edg")) {
+      return "Edge";
+    } else if (ua.includes("Chrome") && !ua.includes("Chromium")) {
+      return "Chrome";
+    } else if (ua.includes("Safari") && !ua.includes("Chrome")) {
+      return "Safari";
+    }
+    return "Other";
+  }
+
+  function adjustUIForBrowser() {
+    const browser = detectBrowser();
+    const manifest = window.AI_CONFIG.browserManifest[browser] || window.AI_CONFIG.browserManifest['Other'];
+    const cardWindowAI = document.getElementById('cardWindowAI');
+    if (!cardWindowAI) return;
+    
+    if (!manifest.supported) {
+      cardWindowAI.classList.add('disabled');
+    } else {
+      cardWindowAI.classList.remove('disabled');
+    }
+    
+    const titleEl = cardWindowAI.querySelector('.provider-title');
+    const setupMetaEl = cardWindowAI.querySelector('.provider-meta:last-child');
+    
+    if (titleEl) {
+      titleEl.textContent = manifest.label;
+    }
+    if (setupMetaEl) {
+      setupMetaEl.innerHTML = `<strong>Setup:</strong> ${manifest.setupHtml}`;
+    }
+  }
+
   // --- Initial Setup ---
+  adjustUIForBrowser();
   setupSettingsModalListeners();
   renderFAQSection();
   await checkAIServiceStatus();
@@ -296,6 +335,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   function selectCard(provider) {
     selectedProvider = provider;
     providerCards.forEach(card => {
+      if (card.classList.contains('disabled')) {
+        card.classList.remove('selected');
+        return;
+      }
       if (card.getAttribute('data-provider') === provider) {
         card.classList.add('selected');
       } else {
@@ -307,6 +350,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function updateModalState() {
     const caps = await window.aiService.checkCapabilities();
     selectedProvider = caps.activeProvider;
+    if (selectedProvider === 'window.ai' && !caps.windowAI) {
+      selectedProvider = 'mock';
+    }
     selectCard(selectedProvider);
 
     modalGeminiKeyInput.value = window.aiService.geminiApiKey;
@@ -351,14 +397,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   async function checkAIServiceStatus() {
     const caps = await window.aiService.checkCapabilities();
     const ready = await isAIReady();
+    const browser = detectBrowser();
 
     if (caps.activeProvider === 'window.ai') {
+      const manifest = window.AI_CONFIG.browserManifest[browser] || window.AI_CONFIG.browserManifest['Other'];
       if (caps.windowAI) {
         statusDot.className = 'status-dot active';
-        statusText.textContent = 'Chrome Built-in AI';
+        statusText.textContent = manifest.supported ? manifest.label : 'Chrome Built-in AI';
       } else {
         statusDot.className = 'status-dot';
-        statusText.textContent = 'Chrome Built-in AI (Not Ready)';
+        if (!manifest.supported) {
+          statusText.textContent = 'Confirm AI Provider';
+        } else {
+          statusText.textContent = `${manifest.label} (Not Ready)`;
+        }
       }
     } else if (caps.activeProvider === 'gemini') {
       if (caps.geminiKey) {
@@ -383,6 +435,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Sync Model Select indicators in Step 4
     syncModelIndicators();
+
+    // Toggle warning class on the settings button chip based on readiness
+    if (aiSettingsBtn) {
+      if (ready) {
+        aiSettingsBtn.classList.remove('warning');
+      } else {
+        aiSettingsBtn.classList.add('warning');
+      }
+    }
 
     // Enable processBtn if file is loaded AND AI model is ready (and not currently processing)
     if (parsedRawRows && parsedRawRows.length > 0) {

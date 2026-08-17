@@ -26,5 +26,32 @@ window.AI_CONFIG = {
       speed: 'Instant',
       cost: 'None'
     }
+  },
+  browserManifest: {
+    'Chrome': {
+      label: 'Chrome Built-in AI',
+      supported: true,
+      setupHtml: 'Open a new Chrome tab and type <code class="code-link">chrome://flags</code>. Find the setting "Prompt API" and set it to Enabled.'
+    },
+    'Edge': {
+      label: 'Edge Built-in AI',
+      supported: true,
+      setupHtml: 'Supported in Edge Dev/Canary (v138+). Requires the <code class="code-link">BuiltInAIAPIsEnabled</code> policy enabled, or joining the Edge Prompt API Origin Trial.'
+    },
+    'Firefox': {
+      label: 'Firefox Browser (Local AI Unsupported)',
+      supported: false,
+      setupHtml: 'Not supported yet in Firefox. Choose a Gemini or OpenAI cloud key below, or switch browsers.'
+    },
+    'Safari': {
+      label: 'Safari Browser (Local AI Unsupported)',
+      supported: false,
+      setupHtml: 'Not supported yet in Safari. Choose a Gemini or OpenAI cloud key below, or switch browsers.'
+    },
+    'Other': {
+      label: 'Browser (Local AI Unsupported)',
+      supported: false,
+      setupHtml: 'Not supported yet in this browser. Choose a Gemini or OpenAI cloud key below, or switch browsers.'
+    }
   }
 };

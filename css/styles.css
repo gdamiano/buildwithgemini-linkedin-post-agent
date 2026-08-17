@@ -644,6 +644,17 @@ h1, h2, h3, h4, .brand-title {
   background-color: #f8fafc;
 }
 
+.provider-card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+  background-color: #f1f5f9;
+}
+
+.provider-card.disabled .provider-radio {
+  display: none;
+}
+
 .provider-card.selected {
   background-color: #f0fdf4;
   border-color: #bbf7d0;
@@ -1021,6 +1032,25 @@ h1, h2, h3, h4, .brand-title {
 
 .ai-settings-btn:hover {
   background-color: #e2e8f0;
+}
+
+.ai-settings-btn.warning {
+  background-color: #fef2f2;
+  border-color: #fecdd3;
+  color: #991b1b;
+}
+
+.ai-settings-btn.warning:hover {
+  background-color: #fee2e2;
+}
+
+.ai-settings-btn.warning .status-dot {
+  background-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  border-radius: 0;
+  width: 10px;
+  height: 10px;
 }
 
 .model-stats {
