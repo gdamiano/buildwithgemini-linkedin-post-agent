@@ -13,6 +13,10 @@ window.FAQ_CONFIG = [
     answer: "Post contents and profile data never leave your physical device. All spreadsheet parsing, deduplication, and IndexedDB data caching happen entirely inside your local browser. No third-party server or cloud database has access to your saved posts."
   },
   {
+    question: "What if I want to share a question, suggestion, problem or compliment?",
+    answer: "Let me know what you think! https://www.linkedin.com/in/gregorydamiano/"
+  },
+  {
     question: "How do I create a CSV or Excel file of my saved LinkedIn posts?",
     answer: "You can use the free browser tool <a href='https://chromewebstore.google.com/detail/linkedin-saved-posts-expo/fcpdebjamdlbegjmaecakjcpjafgibkm' target='_blank' rel='noopener' style='color: var(--primary); font-weight: 600; text-decoration: underline;'>LinkedIn Saved Posts Exporter</a> from the Chrome Web Store to export your saved items into a .csv or .xlsx spreadsheet file with one click.<br><br>This tool sorts post data into the columns that are used by LinkedIn Saved Posts Browser."
   },

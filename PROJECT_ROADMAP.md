@@ -24,7 +24,8 @@
 ### VERSION 1.1 | Decouple from 3rd-party extension | outcome = ready to post / share wide
 - [x] Bookmarklet method to farm links, to replace manual LI page scrolling and 3rd party installs
 - [x] Remake FE to reflect new bookmarklet flow
-- [ ] (stretch) Analytics?
+- [x] (stretch) Analytics?	
+- [ ] (stretch) Leave a note!
 
 ## PHASE 3 | LIVE AND SHARED
 
