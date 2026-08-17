@@ -363,6 +363,7 @@ h1, h2, h3, h4, .brand-title {
   text-align: left;
   font-size: 0.875rem;
   background-color: var(--card-bg);
+  table-layout: fixed;
 }
 
 .data-table th {
@@ -380,6 +381,8 @@ h1, h2, h3, h4, .brand-title {
   padding: 1rem;
   border-bottom: 1px solid var(--border-color);
   vertical-align: top;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 .data-table tr:last-child td {

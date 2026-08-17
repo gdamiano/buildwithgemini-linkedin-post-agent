@@ -68,7 +68,7 @@ class AIService {
     };
   }
 
-  async analyzePost(rawPost) {
+  async analyzePost(rawPost, existingTopics = []) {
     const caps = await this.checkCapabilities();
     let provider = this.currentProvider;
     if (provider === 'window.ai' && !caps.windowAI) {
@@ -76,34 +76,132 @@ class AIService {
     }
 
     if (provider === 'window.ai') {
-      return this.analyzeWithWindowAI(rawPost);
+      return this.analyzeWithWindowAI(rawPost, existingTopics);
     } else if (provider === 'gemini') {
-      return this.analyzeWithGeminiAPI(rawPost);
+      return this.analyzeWithGeminiAPI(rawPost, existingTopics);
     } else if (provider === 'openai') {
-      return this.analyzeWithOpenAIAPI(rawPost);
+      return this.analyzeWithOpenAIAPI(rawPost, existingTopics);
     } else {
-      return this.analyzeWithMock(rawPost);
+      return this.analyzeWithMock(rawPost, existingTopics);
     }
+  }
+
+  /**
+   * Helper to construct system instructions featuring existing topics
+   */
+  getSystemPrompt(existingTopics = []) {
+    let prompt = SYSTEM_PROMPT_CONSTRAINTS;
+    if (Array.isArray(existingTopics) && existingTopics.length > 0) {
+      prompt += `\n\nCRITICAL CATEGORY REQUIREMENT: You MUST prioritize matching the post into one of these existing topic groups if it fits. If (and only if) none of these topics represent a reasonable fit, you may generate a new concise topic tag.\nExisting Preferred Topics:\n${existingTopics.map(t => `- ${t}`).join('\n')}`;
+    }
+    return prompt;
+  }
+
+  /**
+   * Safe JSON parsing and fallback extraction to recover from malformed/safety-blocked outputs
+   */
+  safeParseJSON(text, rawPost) {
+    if (!text) {
+      return this.getFallbackAnalysis(rawPost);
+    }
+    
+    let cleanText = text.trim();
+    
+    // Clean markdown code blocks
+    if (cleanText.startsWith('```')) {
+      cleanText = cleanText.replace(/^```(json)?/i, '').replace(/```$/, '').trim();
+    }
+    
+    // Locate first '{' and last '}'
+    const startIdx = cleanText.indexOf('{');
+    const endIdx = cleanText.lastIndexOf('}');
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+      cleanText = cleanText.substring(startIdx, endIdx + 1);
+    }
+
+    try {
+      const parsed = JSON.parse(cleanText);
+      if (parsed && typeof parsed === 'object') {
+        return {
+          topic: parsed.topic || 'Industry Insights',
+          postSummary: parsed.postSummary || 'Summary unavailable',
+          sentiment: parsed.sentiment || 'Neutral',
+          sentimentReason: parsed.sentimentReason || 'No details provided.'
+        };
+      }
+    } catch (e) {
+      console.warn('Initial JSON parsing failed, attempting repair:', e);
+      try {
+        // Simple repair: strip trailing commas inside closing structures
+        let repaired = cleanText.replace(/,\s*([\]}])/g, '$1');
+        // Strip control characters which disrupt JSON parsing
+        repaired = repaired.replace(/[\u0000-\u001F^\n]/g, ""); 
+        
+        const parsed = JSON.parse(repaired);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            topic: parsed.topic || 'Industry Insights',
+            postSummary: parsed.postSummary || 'Summary unavailable',
+            sentiment: parsed.sentiment || 'Neutral',
+            sentimentReason: parsed.sentimentReason || 'No details provided.'
+          };
+        }
+      } catch (err) {
+        console.warn('JSON repair failed:', err);
+      }
+    }
+
+    return this.getFallbackAnalysis(rawPost);
+  }
+
+  /**
+   * Generates a fallback topic, summary, and sentiment locally
+   */
+  getFallbackAnalysis(rawPost) {
+    const textLower = (rawPost.postText || '').toLowerCase();
+    let topic = 'Industry Insights';
+    if (textLower.includes('hiring') || textLower.includes('open role') || textLower.includes('we are looking for')) {
+      topic = 'Hiring';
+    } else if (textLower.includes('resume') || textLower.includes('interview') || textLower.includes('career advice') || textLower.includes('job search')) {
+      topic = 'Job Search Advice';
+    } else if (textLower.includes('ai') || textLower.includes('llm') || textLower.includes('gpt')) {
+      topic = 'AI & Machine Learning';
+    } else if (textLower.includes('design') || textLower.includes('ux') || textLower.includes('ui')) {
+      topic = 'Product Design & UX';
+    }
+
+    let summary = 'Summary unavailable';
+    if (rawPost.postText) {
+      const cleanSummary = rawPost.postText.replace(/[\r\n\t]+/g, ' ').trim();
+      summary = cleanSummary.length > 60 ? cleanSummary.slice(0, 57) + '...' : cleanSummary;
+    }
+
+    return {
+      topic,
+      postSummary: summary,
+      sentiment: 'Neutral',
+      sentimentReason: 'Post parsed via local rule fallback.'
+    };
   }
 
   /**
    * 1. Chrome Built-in AI (LanguageModel / window.ai) Adapter
    */
-  async analyzeWithWindowAI(rawPost) {
+  async analyzeWithWindowAI(rawPost, existingTopics = []) {
     try {
       let session;
       const promptText = `Post Author: ${rawPost.name} (${rawPost.jobTitle})\nPost Content:\n${rawPost.postText}`;
+      const systemPrompt = this.getSystemPrompt(existingTopics);
 
-      // Chrome standard LanguageModel API
       if (typeof LanguageModel !== 'undefined' || typeof window.LanguageModel !== 'undefined') {
         const LM = typeof LanguageModel !== 'undefined' ? LanguageModel : window.LanguageModel;
         session = await LM.create({
           outputLanguage: 'en',
-          initialPrompts: [{ role: 'system', content: SYSTEM_PROMPT_CONSTRAINTS }]
+          initialPrompts: [{ role: 'system', content: systemPrompt }]
         });
       } else if (typeof window.ai !== 'undefined' && window.ai.languageModel) {
         session = await window.ai.languageModel.create({
-          systemPrompt: SYSTEM_PROMPT_CONSTRAINTS
+          systemPrompt: systemPrompt
         });
       }
 
@@ -112,12 +210,7 @@ class AIService {
       }
 
       const responseText = await session.prompt(promptText);
-      
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
-      }
-      throw new Error('Failed to parse JSON from LanguageModel');
+      return this.safeParseJSON(responseText, rawPost);
     } catch (err) {
       console.error('LanguageModel / window.ai analysis failed:', err);
       throw new Error('Chrome Built-in AI failed or is unavailable. Please select another AI engine in Settings.');
@@ -127,7 +220,7 @@ class AIService {
   /**
    * 2. Direct Gemini REST API Adapter (User API Key)
    */
-  async analyzeWithGeminiAPI(rawPost) {
+  async analyzeWithGeminiAPI(rawPost, existingTopics = []) {
     if (!this.geminiApiKey) {
       throw new Error('Gemini API key missing. Please enter your API Key in Settings.');
     }
@@ -135,7 +228,8 @@ class AIService {
     const modelName = this.geminiModel || 'gemini-3.5-flash-lite';
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${this.geminiApiKey}`;
 
-    const promptText = `${SYSTEM_PROMPT_CONSTRAINTS}\n\nPost Author: ${rawPost.name} (${rawPost.jobTitle})\nPost Content:\n${rawPost.postText}`;
+    const systemPrompt = this.getSystemPrompt(existingTopics);
+    const promptText = `${systemPrompt}\n\nPost Author: ${rawPost.name} (${rawPost.jobTitle})\nPost Content:\n${rawPost.postText}`;
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -153,13 +247,13 @@ class AIService {
 
     const data = await response.json();
     const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    return JSON.parse(candidateText);
+    return this.safeParseJSON(candidateText, rawPost);
   }
 
   /**
    * 3. Direct OpenAI REST API Adapter
    */
-  async analyzeWithOpenAIAPI(rawPost) {
+  async analyzeWithOpenAIAPI(rawPost, existingTopics = []) {
     if (!this.openaiApiKey) {
       throw new Error('OpenAI API key missing. Please enter your API Key in Settings.');
     }
@@ -168,6 +262,7 @@ class AIService {
     const endpoint = 'https://api.openai.com/v1/chat/completions';
 
     const promptText = `Post Author: ${rawPost.name} (${rawPost.jobTitle})\nPost Content:\n${rawPost.postText}`;
+    const systemPrompt = this.getSystemPrompt(existingTopics);
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -179,7 +274,7 @@ class AIService {
         model: modelName,
         response_format: { type: "json_object" },
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT_CONSTRAINTS },
+          { role: 'system', content: systemPrompt },
           { role: 'user', content: promptText }
         ]
       })
@@ -192,13 +287,13 @@ class AIService {
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
-    return JSON.parse(content);
+    return this.safeParseJSON(content, rawPost);
   }
 
   /**
-   * 3. Mock Simulator Adapter for fast testing
+   * 4. Mock Simulator Adapter for fast testing
    */
-  async analyzeWithMock(rawPost) {
+  async analyzeWithMock(rawPost, existingTopics = []) {
     await new Promise(r => setTimeout(r, 150)); // Simulate micro-delay
 
     const textLower = (rawPost.postText + ' ' + rawPost.jobTitle).toLowerCase();
@@ -233,6 +328,14 @@ class AIService {
       summary = 'Overview of scalable cloud deployment architecture and developer tooling.';
       sentiment = 'Neutral';
       sentimentReason = 'Technical architecture breakdown without strong emotional framing.';
+    }
+
+    // Match against existing topics if it matches one closely (ignoring case)
+    if (Array.isArray(existingTopics) && existingTopics.length > 0) {
+      const match = existingTopics.find(t => t.toLowerCase() === topic.toLowerCase());
+      if (match) {
+        topic = match;
+      }
     }
 
     return {

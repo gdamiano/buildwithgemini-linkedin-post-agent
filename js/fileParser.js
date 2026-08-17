@@ -98,11 +98,39 @@ class FileParser {
   }
 
   /**
-   * Formats Excel serial numbers (e.g. 46237.777) or raw strings into YYYY-MM-DD
+   * Formats Excel serial numbers (e.g. 46237.777) or raw strings into YYYY-MM-DD.
+   * Handles relative LinkedIn timestamps (e.g., 23h, 1w, 2d, 3mo, 4y).
    */
   formatDate(val) {
     if (!val || val === 'N/A') return 'N/A';
     
+    const valStr = String(val).trim();
+
+    // Try parsing relative dates (e.g. "23h", "1w", "2d", "3mo", "4y", "3m", "45s")
+    const relativeRegex = /^(\d+)\s*(s|sec|second|m|min|minute|h|hr|hour|d|day|w|week|mo|month|y|yr|year)s?$/i;
+    const match = valStr.match(relativeRegex);
+    if (match) {
+      const quantity = parseInt(match[1], 10);
+      const unit = match[2].toLowerCase();
+      const date = new Date();
+      if (unit.startsWith('s')) {
+        date.setSeconds(date.getSeconds() - quantity);
+      } else if (unit.startsWith('m') && !unit.startsWith('mo')) {
+        date.setMinutes(date.getMinutes() - quantity);
+      } else if (unit.startsWith('h')) {
+        date.setHours(date.getHours() - quantity);
+      } else if (unit.startsWith('d')) {
+        date.setDate(date.getDate() - quantity);
+      } else if (unit.startsWith('w')) {
+        date.setDate(date.getDate() - quantity * 7);
+      } else if (unit.startsWith('mo')) {
+        date.setMonth(date.getMonth() - quantity);
+      } else if (unit.startsWith('y')) {
+        date.setFullYear(date.getFullYear() - quantity);
+      }
+      return date.toISOString().split('T')[0];
+    }
+
     const num = parseFloat(val);
     // Excel serial dates typically fall between 30000 (year 1982) and 60000 (year 2064)
     if (!isNaN(num) && num > 30000 && num < 60000) {

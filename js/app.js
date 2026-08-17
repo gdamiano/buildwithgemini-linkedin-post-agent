@@ -131,7 +131,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       if (payloadStr) {
-        const rawPosts = JSON.parse(payloadStr);
+        let rawPosts;
+        try {
+          rawPosts = JSON.parse(payloadStr);
+        } catch (parseErr) {
+          console.warn('Failed to parse import payload JSON:', parseErr);
+          alert('⚠️ The imported bookmarklet post data was malformed or incomplete. Please try collecting again.');
+          return;
+        }
+
         if (Array.isArray(rawPosts) && rawPosts.length > 0) {
           // Normalize bookmarklet items to the app's internal format
           const normalized = [];
@@ -180,9 +188,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const postText = raw.postText || raw['Post Summary'] || '';
             const linkInsidePost = window.fileParser ? window.fileParser.extractUrlsFromText(postText) : 'None';
+            
+            // Normalize relative dates
+            const rawDate = raw.date || raw.Date || new Date().toISOString().split('T')[0];
+            const formattedDate = window.fileParser ? window.fileParser.formatDate(rawDate) : rawDate;
 
             normalized.push({
-              date: raw.date || raw.Date || new Date().toISOString().split('T')[0],
+              date: formattedDate,
               name,
               jobTitle,
               linkToPost,
@@ -247,7 +259,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
     } catch (e) {
-      console.warn('Could not parse bookmarklet payload from localStorage', e);
+      console.warn('Could not process bookmarklet payload', e);
     }
   }
 
@@ -554,6 +566,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (parsedRawRows.length === 0) return;
 
+    // Fetch existing topics before starting the process
+    let existingTopics = [];
+    try {
+      const allPosts = await window.postStorage.getAllPosts();
+      existingTopics = Array.from(new Set(allPosts.map(p => p.topic).filter(Boolean)));
+    } catch (err) {
+      console.warn('Failed to retrieve existing topics for classification context:', err);
+    }
+
     // Check user-specified max row limit
     let rowLimit = parseInt(maxRowsInput.value, 10);
     let rowsToProcess = parsedRawRows;
@@ -599,7 +620,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           progressStatusText.textContent = `Analyzing posts (${processedCount + 1}/${total}) via AI...`;
           
           try {
-            const aiAnalysis = await window.aiService.analyzePost(raw);
+            const aiAnalysis = await window.aiService.analyzePost(raw, existingTopics);
             cachedPost = {
               id: hashId,
               date: raw.date,
@@ -733,7 +754,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     topicChipsContainer.appendChild(readChip);
 
-    Object.keys(topicCounts).forEach(topic => {
+    Object.keys(topicCounts).sort((a, b) => a.localeCompare(b)).forEach(topic => {
       const chip = document.createElement('div');
       chip.className = `topic-chip ${currentFilterTopic === topic ? 'active' : ''}`;
       chip.innerHTML = `${topic} <span class="chip-count">${topicCounts[topic]}</span>`;
@@ -778,9 +799,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (topicCompare !== 0) return topicCompare;
       
       // Secondary sort: Date descending (newest first)
-      const dateA = new Date(a.date || 0);
-      const dateB = new Date(b.date || 0);
-      return dateB - dateA;
+      let timeA = 0;
+      let timeB = 0;
+      if (a.date && a.date !== 'N/A') {
+        const parsed = new Date(a.date).getTime();
+        if (!isNaN(parsed)) timeA = parsed;
+      }
+      if (b.date && b.date !== 'N/A') {
+        const parsed = new Date(b.date).getTime();
+        if (!isNaN(parsed)) timeB = parsed;
+      }
+      return timeB - timeA;
     });
 
     postsTableBody.innerHTML = '';
@@ -833,8 +862,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (p.linkInsidePost && p.linkInsidePost !== 'None') {
         const urls = p.linkInsidePost.split(',').map(u => u.trim());
         urls.forEach(url => {
-          const displayUrl = url.length > 25 ? url.slice(0, 23) + '...' : url;
-          linksList.push(`• <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="body-link" data-link-type="embed">${escapeHtml(displayUrl)} ↗</a>`);
+          let cleanUrl = url.replace(/https?:\/\/(www\.)?/, '');
+          const displayUrl = cleanUrl.length > 6 ? cleanUrl.slice(0, 6) + '...' : cleanUrl;
+          linksList.push(`• <a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="body-link" data-link-type="embed" title="${escapeHtml(url)}">${escapeHtml(displayUrl)} ↗</a>`);
         });
       }
       const linksHtml = linksList.length > 0 ? linksList.join('<br>') : '<span style="color: var(--text-muted);">None</span>';
@@ -843,7 +873,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         <td style="white-space: nowrap; font-size: 0.85rem;">${p.date || 'N/A'}</td>
         <td style="max-width: 220px;">${nameAndTitleHtml}</td>
         <td style="max-width: 280px;">${postSummaryHtml}</td>
-        <td style="font-size: 0.825rem; min-width: 110px; white-space: nowrap;">${linksHtml}</td>
+        <td style="font-size: 0.825rem;">${linksHtml}</td>
         <td>
           <div class="sentiment-cell">
             <div><span class="badge ${badgeClass}">${escapeHtml(p.sentiment)}</span></div>
@@ -967,7 +997,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       'Industry Insights & Updates'
     ];
     
-    const combinedTopics = Array.from(new Set([...existingTopics, ...defaultTopics]));
+    const combinedTopics = Array.from(new Set([...existingTopics, ...defaultTopics])).sort((a, b) => a.localeCompare(b));
 
     categorySelect.innerHTML = '';
     combinedTopics.forEach(top => {
