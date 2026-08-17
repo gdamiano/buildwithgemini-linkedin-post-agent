@@ -915,13 +915,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (targetPost) {
           targetPost.read = isChecked;
           await window.postStorage.savePost(targetPost);
-          
-          const parentRow = e.target.closest('tr');
-          if (isChecked) {
-            parentRow.classList.add('row-read');
-          } else {
-            parentRow.classList.remove('row-read');
-          }
+          await loadAndRenderPosts();
         }
       });
     });
