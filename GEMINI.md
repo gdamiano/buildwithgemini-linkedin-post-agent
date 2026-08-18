@@ -13,7 +13,7 @@ This workspace contains the **LinkedIn Saved Post Browser (SPB)** project.
 - **Tech Stack:** Vanilla HTML5, CSS3, ES6 JavaScript, `SheetJS` (CSV/XLSX), `IndexedDB` storage.
 - **Hosting Target:** GitHub Pages ($0 cost, client-side static SPA).
 - **Primary AI Engine:** Chrome Built-in AI (`window.LanguageModel` / Gemini Nano on-device).
-- **Secondary AI Engine:** Google Gemini REST API (`gemini-2.5-flash` via user's API Key).
+- **Secondary AI Engine:** Google Gemini REST API (`gemini-3.5-flash-lite`, `gemini-3.5-flash`) or OpenAI API (`gpt-4o-mini`, `gpt-4o`, `o3-mini`) via user's API Key.
 
 ---
 

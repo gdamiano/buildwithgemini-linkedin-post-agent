@@ -3,6 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Content Security Policy (CSP) for client defense-in-depth -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' https://fonts.googleapis.com 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.licdn.com; connect-src 'self' https://*.workers.dev https://generativelanguage.googleapis.com https://api.openai.com; frame-src 'none'; object-src 'none';">
+
   <title>LinkedIn Saved Post Browser (SPB)</title>
   
   <!-- Favicon -->
@@ -14,8 +18,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
   
-  <!-- SheetJS CDN for In-Browser CSV/XLSX Parsing & Export -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- SheetJS CDN for In-Browser CSV/XLSX Parsing & Export (Secured via SRI Check) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" 
+          integrity="sha256-yVBhl8r4CaB1tt7h2g02+xnacVj/6KiOewyWxdhiPJk=" 
+          crossorigin="anonymous"></script>
 
   <!-- App Stylesheet -->
   <link rel="stylesheet" href="css/styles.css">
@@ -381,7 +387,14 @@
             </div>
           </div>
         </div>
+      </div>
 
+      <!-- Secure key persistence toggle -->
+      <div style="margin: 1.5rem 0.5rem 1rem 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        <input type="checkbox" id="rememberKeysCheckbox" style="width: 16px; height: 16px; cursor: pointer;">
+        <label for="rememberKeysCheckbox" style="font-size: 0.875rem; color: var(--text-main); font-weight: 500; cursor: pointer; user-select: none;">
+          Remember API keys in this browser (Convenient but less secure)
+        </label>
       </div>
 
       <div class="modal-footer-note">

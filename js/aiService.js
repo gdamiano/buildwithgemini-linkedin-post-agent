@@ -21,9 +21,12 @@ Output MUST be a valid JSON object matching this schema exactly:
 class AIService {
   constructor() {
     this.currentProvider = localStorage.getItem('SPB_AI_PROVIDER') || 'window.ai';
-    this.geminiApiKey = localStorage.getItem('SPB_GEMINI_API_KEY') || '';
+    this.persistKeys = localStorage.getItem('SPB_PERSIST_KEYS') === 'true';
+
+    // Retrieve from localStorage if opt-in is active, otherwise default to blank (in-memory only)
+    this.geminiApiKey = this.persistKeys ? (localStorage.getItem('SPB_GEMINI_API_KEY') || '') : '';
     this.geminiModel = localStorage.getItem('SPB_GEMINI_MODEL') || 'gemini-3.5-flash-lite';
-    this.openaiApiKey = localStorage.getItem('SPB_OPENAI_API_KEY') || '';
+    this.openaiApiKey = this.persistKeys ? (localStorage.getItem('SPB_OPENAI_API_KEY') || '') : '';
     this.openaiModel = localStorage.getItem('SPB_OPENAI_MODEL') || 'gpt-4o-mini';
   }
 
@@ -32,9 +35,25 @@ class AIService {
     localStorage.setItem('SPB_AI_PROVIDER', provider);
   }
 
+  setPersistKeys(persist) {
+    this.persistKeys = !!persist;
+    localStorage.setItem('SPB_PERSIST_KEYS', String(this.persistKeys));
+    if (this.persistKeys) {
+      localStorage.setItem('SPB_GEMINI_API_KEY', this.geminiApiKey);
+      localStorage.setItem('SPB_OPENAI_API_KEY', this.openaiApiKey);
+    } else {
+      localStorage.removeItem('SPB_GEMINI_API_KEY');
+      localStorage.removeItem('SPB_OPENAI_API_KEY');
+    }
+  }
+
   setGeminiApiKey(key) {
     this.geminiApiKey = key.trim();
-    localStorage.setItem('SPB_GEMINI_API_KEY', this.geminiApiKey);
+    if (this.persistKeys) {
+      localStorage.setItem('SPB_GEMINI_API_KEY', this.geminiApiKey);
+    } else {
+      localStorage.removeItem('SPB_GEMINI_API_KEY');
+    }
   }
 
   setGeminiModel(model) {
@@ -44,7 +63,11 @@ class AIService {
 
   setOpenAIApiKey(key) {
     this.openaiApiKey = key.trim();
-    localStorage.setItem('SPB_OPENAI_API_KEY', this.openaiApiKey);
+    if (this.persistKeys) {
+      localStorage.setItem('SPB_OPENAI_API_KEY', this.openaiApiKey);
+    } else {
+      localStorage.removeItem('SPB_OPENAI_API_KEY');
+    }
   }
 
   setOpenAIModel(model) {

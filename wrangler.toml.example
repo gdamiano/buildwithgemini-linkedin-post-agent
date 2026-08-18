@@ -3,10 +3,10 @@ main = "src/index.js"
 compatibility_date = "2024-03-03"
 
 # D1 Database Binding
-# Note: You can create your D1 database in the Cloudflare Dashboard:
+# Note: Create your D1 database in the Cloudflare Dashboard:
 # Workers & Pages -> D1 -> Create database -> Dashboard.
 # Then update the database_id below with your unique DB ID.
 [[d1_databases]]
 binding = "DB"
 database_name = "spb-analytics-db"
-database_id = "414651f5-d1b1-44a3-a682-55de75f6816b"
+database_id = "YOUR_DATABASE_ID_HERE"

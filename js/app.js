@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const badgeWindowAIAvail = document.getElementById('badgeWindowAIAvail');
   const badgeGeminiAvail = document.getElementById('badgeGeminiAvail');
   const badgeOpenAIAvail = document.getElementById('badgeOpenAIAvail');
+  const rememberKeysCheckbox = document.getElementById('rememberKeysCheckbox');
 
   let parsedRawRows = [];
   let currentFilterTopic = 'All';
@@ -289,6 +290,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (saveSettingsBtn) {
       saveSettingsBtn.addEventListener('click', async () => {
         window.aiService.setProvider(selectedProvider);
+        window.aiService.setPersistKeys(rememberKeysCheckbox.checked);
         window.aiService.setGeminiApiKey(modalGeminiKeyInput.value);
         window.aiService.setGeminiModel(modalGeminiModelSelect.value);
         window.aiService.setOpenAIApiKey(modalOpenAIKeyInput.value);
@@ -371,6 +373,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     modalGeminiModelSelect.value = window.aiService.geminiModel;
     modalOpenAIKeyInput.value = window.aiService.openaiApiKey;
     modalOpenAIModelSelect.value = window.aiService.openaiModel;
+    if (rememberKeysCheckbox) {
+      rememberKeysCheckbox.checked = window.aiService.persistKeys;
+    }
 
     // Toggle "Available" status indicators
     if (caps.windowAI) {

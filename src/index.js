@@ -91,9 +91,9 @@ export default {
     if (url.pathname === "/report") {
       const key = url.searchParams.get("key");
       
-      // Compares with the env secret variable REPORT_SECRET_KEY, defaults to "admin"
-      const secretKey = env.REPORT_SECRET_KEY || "admin";
-      if (key !== secretKey) {
+      // Requires the env secret variable REPORT_SECRET_KEY to be set
+      const secretKey = env.REPORT_SECRET_KEY;
+      if (!secretKey || key !== secretKey) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), { 
           status: 401, 
           headers: { ...corsHeaders, "Content-Type": "application/json" }
@@ -133,15 +133,24 @@ export default {
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), {
+        return new Response(JSON.stringify({ error: "Internal Server Error" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" }
         });
       }
     }
 
-    // Route: /debug
+    // Route: /debug?key=...
     if (url.pathname === "/debug") {
+      const key = url.searchParams.get("key");
+      const secretKey = env.REPORT_SECRET_KEY;
+      if (!secretKey || key !== secretKey) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), { 
+          status: 401, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
       let cooldownCount = 0;
       try {
         const cooldownCheck = await env.DB.prepare(
@@ -149,7 +158,7 @@ export default {
         ).first();
         cooldownCount = cooldownCheck ? cooldownCheck.count : 0;
       } catch (err) {
-        cooldownCount = "Database Error: " + err.message;
+        cooldownCount = "Database Error";
       }
 
       return new Response(JSON.stringify({

@@ -84,13 +84,13 @@ async def upload_file(file: UploadFile = File(...)):
 @app.post("/api/process")
 async def process_file(req: ProcessRequest):
     """Processes a file in data/ directory instantly and returns structured 8-column results."""
-    filename = req.filename
-    file_path = os.path.join(DATA_DIR, filename)
+    clean_filename = os.path.basename(req.filename)
+    file_path = os.path.join(DATA_DIR, clean_filename)
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail=f"File '{filename}' not found in data/ directory.")
+        raise HTTPException(status_code=404, detail=f"File '{clean_filename}' not found in data/ directory.")
 
     # 1. Instantly parse and auto-analyze all rows into cache
-    read_linkedin_file(filename)
+    read_linkedin_file(clean_filename)
 
     # 2. Trigger agent session for ADK runner lifecycle
     session_id = f"web_session_{os.urandom(4).hex()}"

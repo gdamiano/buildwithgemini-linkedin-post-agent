@@ -37,7 +37,7 @@ Every processed post is normalized into an 8-column schema stored in `IndexedDB`
 | **1** | `Date` | String | Date created/saved (Format: `YYYY-MM-DD`). Automatically converts Excel serial dates or relative LinkedIn time stamps (e.g. `23h`, `1w`). |
 | **2** | `Name & Title` | HTML | Author's full name (clickable link to their LinkedIn profile if `profileLink` exists) + headline/job title stacked below. |
 | **3** | `Post Summary` | HTML | **5 to 20 word summary** of post content + Topic category pill tag stacked below.<br>⚠️ **Hiring Rule Constraint**: For hiring posts, summary MUST follow: `"Hiring [Job Title] at [Company]"`. |
-| **4** | `Links` | HTML | Bullet points for direct permalink (`• Post ↗`) and embedded body URLs extracted via Regex (`• www.link.com ↗`). |
+| **4** | `Links` | HTML | Bullet points for direct permalink (`• Post ↗`) and embedded body URLs extracted via Regex (names truncated to 6 characters, full URL shown on hover). |
 | **5** | `Sentiment & Analysis` | HTML | Colored badge (`Positive`, `Neutral`, `Negative`) on line 1, and 1-sentence contextual explanation on line 2. |
 | **6** | `Read` | Checkbox | User-selected check state. Checking dims row text to grey and turns cell background light grey (`#f1f5f9`). Filterable via the "Read" and "Unread" topic chips. |
 | **7** | `Star` | Button | Toggle button (`⭐` / `☆`). Starred posts save reminder status to `IndexedDB` and filter via "Star Posts" chip. |
@@ -79,6 +79,8 @@ Output MUST be a valid JSON object matching this schema exactly:
   "sentiment": "Positive" | "Neutral" | "Negative",
   "sentimentReason": "1-sentence contextual explanation for the sentiment rating"
 }
+
+*Note: The system prompt dynamically appends the list of existing stored topics to guide the AI towards matching existing labels to prevent duplicate categories.*
 ```
 
 ---
@@ -91,6 +93,10 @@ Output MUST be a valid JSON object matching this schema exactly:
 4. **Zero-Step URL Query Transfer:** Bookmarklet automatically encodes and transfers small datasets directly to the app via URL query string, saving file downloading steps.
 5. **Robust DOM-Collection Selectors:** Bookmarklet uses text-length inspections and layout checks to capture 100% of posts under various viewport configurations, including posts containing embeds.
 6. **Smart Scroll Targets:** Automatically scrolls both window and nested layouts (e.g., `.scaffold-layout__main`) to trigger lazy-loaded items under different LinkedIn DOM updates.
+7. **Robust JSON Repair & Fallback:** Handles raw markdown block surrounds (` ```json `), strips trailing commas/unescaped breaks, and gracefully falls back to rule-based keyword tagging if the LLM output is safety-blocked or unparseable.
+8. **Layout & Cell Constraints:** Prevents layout stretch or off-screen scrollbars by using `table-layout: fixed` and cell word-wrapping.
+9. **Tag Chip & Select Alphabetization:** Dynamically alphabetizes TOC chips and Edit Tag dropdown lists.
+10. **Instant UI Check Updates:** Checkbox clicks instantly update TOC counts.
 
 ---
 

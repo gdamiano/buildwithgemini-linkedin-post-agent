@@ -23,6 +23,8 @@ class ExtensionBridge {
    */
   initMessageListener() {
     window.addEventListener('message', (event) => {
+      // Security: Only accept messages originating from the same page context/extension bridge
+      if (event.origin !== window.origin) return;
       if (!event.data || typeof event.data !== 'object') return;
 
       const { type, payload } = event.data;
@@ -109,6 +111,7 @@ class ExtensionBridge {
 
       // 2. Event listener for extension response
       const pongHandler = (event) => {
+        if (event.origin !== window.origin) return;
         if (event.data && (event.data.type === 'LINKEDIN_EXTENSION_PONG' || event.data.type === 'EXPORTER_PONG')) {
           this.isInstalled = true;
           window.removeEventListener('message', pongHandler);
@@ -118,8 +121,8 @@ class ExtensionBridge {
       window.addEventListener('message', pongHandler);
 
       // 3. Dispatch postMessage and CustomEvent pings
-      window.postMessage({ type: 'SPB_PING_EXTENSION' }, '*');
-      window.postMessage({ type: 'PING_EXPORTER' }, '*');
+      window.postMessage({ type: 'SPB_PING_EXTENSION' }, window.origin);
+      window.postMessage({ type: 'PING_EXPORTER' }, window.origin);
       document.dispatchEvent(new CustomEvent('SPB_PING_EXTENSION'));
 
       // 4. Timeout resolve
@@ -146,7 +149,7 @@ class ExtensionBridge {
       payload: {
         limit: options.limit || null
       }
-    }, '*');
+    }, window.origin);
   }
 
   /**
@@ -154,8 +157,8 @@ class ExtensionBridge {
    */
   pausePrep() {
     console.log('[SPB Extension Bridge] ⏸ Pausing Prep pass... Sending kill signal to scroll engine.');
-    window.postMessage({ type: 'SPB_PAUSE_PREP' }, '*');
-    window.postMessage({ type: 'SPB_STOP_SCROLL' }, '*');
+    window.postMessage({ type: 'SPB_PAUSE_PREP' }, window.origin);
+    window.postMessage({ type: 'SPB_STOP_SCROLL' }, window.origin);
     this.collectionState = 'PAUSED';
   }
 
@@ -164,7 +167,7 @@ class ExtensionBridge {
    */
   resumePrep() {
     console.log('[SPB Extension Bridge] ▶ Resuming Prep pass...');
-    window.postMessage({ type: 'SPB_RESUME_PREP' }, '*');
+    window.postMessage({ type: 'SPB_RESUME_PREP' }, window.origin);
     this.collectionState = 'PREPPING';
   }
 
@@ -183,7 +186,7 @@ class ExtensionBridge {
         limit: options.limit || null,
         startIndex: 0
       }
-    }, '*');
+    }, window.origin);
   }
 
   /**
@@ -191,8 +194,8 @@ class ExtensionBridge {
    */
   pauseCollection() {
     console.log('[SPB Extension Bridge] ⏸ Pausing Data Collection... Sending kill signal.');
-    window.postMessage({ type: 'SPB_PAUSE_COLLECTION' }, '*');
-    window.postMessage({ type: 'SPB_STOP_SCROLL' }, '*');
+    window.postMessage({ type: 'SPB_PAUSE_COLLECTION' }, window.origin);
+    window.postMessage({ type: 'SPB_STOP_SCROLL' }, window.origin);
     this.collectionState = 'PAUSED';
   }
 
@@ -202,7 +205,7 @@ class ExtensionBridge {
   resumeCollection() {
     console.log('[SPB Extension Bridge] ▶ Resuming Data Collection...');
     this.collectionState = 'COLLECTING';
-    window.postMessage({ type: 'SPB_RESUME_COLLECTION' }, '*');
+    window.postMessage({ type: 'SPB_RESUME_COLLECTION' }, window.origin);
   }
 
   /**
@@ -210,8 +213,8 @@ class ExtensionBridge {
    */
   stopCollection() {
     console.log('[SPB Extension Bridge] ⏹ Stopping Data Collection cleanly...');
-    window.postMessage({ type: 'SPB_STOP_COLLECTION' }, '*');
-    window.postMessage({ type: 'SPB_STOP_SCROLL' }, '*');
+    window.postMessage({ type: 'SPB_STOP_COLLECTION' }, window.origin);
+    window.postMessage({ type: 'SPB_STOP_SCROLL' }, window.origin);
     this.collectionState = 'COMPLETE';
     if (this.onStatusChangeCallback) {
       this.onStatusChangeCallback({
