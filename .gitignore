@@ -228,3 +228,9 @@ service-account*.json
 wrangler.toml
 data/posts_cache.json
 
+# Promptfoo evaluation outputs, database, and cache
+evals/
+.promptfoo/
+promptfoo.db
+
+

@@ -1,0 +1,23 @@
+description: "Table-Pull Evaluation Pipeline for LinkedIn Saved Posts Browser Logs"
+
+prompts:
+  - "Row ID: {{id}}"
+
+providers:
+  - id: echo
+    label: log-inspector
+
+tests:
+  - file://load-filtered-rows.js:getSelectedRows
+
+evaluateOptions:
+  maxConcurrency: 2
+
+# Output results directly to the evals/ folder in JSON and HTML formats
+outputPath:
+  - evals/eval_report.json
+  - evals/eval_report.html
+
+# Examples to run in the project folder
+# Sample command in PowerShell: $env:FILTER_MODE="range"; $env:FILTER_VALUE="0:2"; npx promptfoo eval --no-cache
+# Sample command in CMD: set FILTER_MODE=range&& set FILTER_VALUE=0:2&& npx promptfoo eval --no-cache

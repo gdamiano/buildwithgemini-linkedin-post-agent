@@ -1,0 +1,14 @@
+{
+  "name": "linkedin-saved-posts-browser-evals",
+  "version": "1.0.0",
+  "description": "Evaluation pipeline for LinkedIn Saved Posts Browser logs using Promptfoo",
+  "main": "load-filtered-rows.js",
+  "scripts": {
+    "eval": "promptfoo eval & node summarize-evals.js",
+    "view": "promptfoo view",
+    "summary": "node summarize-evals.js"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.6"
+  }
+}
