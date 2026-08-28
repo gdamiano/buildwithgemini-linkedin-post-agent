@@ -212,16 +212,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           const uniqueRows = [];
 
           for (const item of normalized) {
-            const hashId = await window.postStorage.generateHashId(item.linkToPost, item.date, item.name, item.postText);
+            const hashId = await window.postStorage.generateHashId(item.linkToPost);
             if (seenHashes.has(hashId)) continue;
             seenHashes.add(hashId);
-            uniqueRows.push(item);
 
             const isCached = await window.postStorage.getPost(hashId);
             if (isCached) {
               cachedCount++;
             } else {
               uniqueCount++;
+              uniqueRows.push(item);
             }
           }
 
@@ -510,7 +510,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function handleSelectedFile(file) {
     try {
-      parsedRawRows = await window.fileParser.parseSpreadsheet(file);
+      const rawRows = await window.fileParser.parseSpreadsheet(file);
       await checkAIServiceStatus();
 
       // Deduplicate file internally and check cache status instantly (non-LLM)
@@ -519,31 +519,31 @@ document.addEventListener('DOMContentLoaded', async () => {
       const seenHashes = new Set();
       const uniqueFileRows = [];
 
-      for (const raw of parsedRawRows) {
-        const hashId = await window.postStorage.generateHashId(raw.linkToPost, raw.date, raw.name, raw.postText);
+      for (const raw of rawRows) {
+        const hashId = await window.postStorage.generateHashId(raw.linkToPost);
         if (seenHashes.has(hashId)) continue; // Ignore duplicate rows inside same file
         seenHashes.add(hashId);
-        uniqueFileRows.push(raw);
 
         const isCached = await window.postStorage.getPost(hashId);
         if (isCached) {
           cachedCount++;
         } else {
           uniqueCount++;
+          uniqueFileRows.push(raw);
         }
       }
 
-      // Replace parsedRawRows with deduplicated rows
+      // Replace parsedRawRows with only the new deduplicated rows to process
       parsedRawRows = uniqueFileRows;
 
       // Update UI Preview Card
       previewFileName.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-      previewTotalRows.textContent = parsedRawRows.length;
+      previewTotalRows.textContent = rawRows.length;
       previewUniqueRows.textContent = uniqueCount;
       previewCachedRows.textContent = cachedCount;
       filePreviewCard.style.display = 'flex';
 
-      progressStatusText.textContent = `File ready! Found ${parsedRawRows.length} unique rows (${uniqueCount} new to analyze, ${cachedCount} in cache).`;
+      progressStatusText.textContent = `File ready! Found ${rawRows.length} total rows (${uniqueCount} new to analyze, ${cachedCount} already in cache).`;
     } catch (err) {
       alert('Error parsing spreadsheet file: ' + err.message);
     }
@@ -616,7 +616,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       await Promise.all(chunk.map(async (raw, idx) => {
         const itemIndex = i + idx;
-        const hashId = await window.postStorage.generateHashId(raw.linkToPost, raw.date, raw.name, raw.postText);
+        const hashId = await window.postStorage.generateHashId(raw.linkToPost);
 
         // Check cache first
         let cachedPost = await window.postStorage.getPost(hashId);
@@ -775,6 +775,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   function renderTableRows(allPosts) {
     const searchTerm = searchInput.value.toLowerCase().trim();
 
+    // Compute frequency of linkToPost URLs to flag existing duplicates
+    const linkCountMap = {};
+    allPosts.forEach(p => {
+      if (p.linkToPost && p.linkToPost !== 'N/A' && p.linkToPost.trim() !== '') {
+        const cleanLink = p.linkToPost.trim().toLowerCase().replace(/\/+$/, '');
+        linkCountMap[cleanLink] = (linkCountMap[cleanLink] || 0) + 1;
+      }
+    });
+
     const filtered = allPosts.filter(p => {
       let matchesTopic = false;
       if (currentFilterTopic === 'All') {
@@ -822,7 +831,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (filtered.length === 0) {
       postsTableBody.innerHTML = `
         <tr>
-          <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+          <td colspan="9" style="text-align: center; color: var(--text-muted); padding: 2rem;">
             No saved posts found matching criteria. Import a file or adjust filters.
           </td>
         </tr>
@@ -851,11 +860,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       `;
 
+      // Check for duplicate warning
+      const cleanLink = p.linkToPost ? p.linkToPost.trim().toLowerCase().replace(/\/+$/, '') : '';
+      const isDuplicate = cleanLink && linkCountMap[cleanLink] >= 2;
+      const duplicateWarningHtml = isDuplicate ?
+        ` <span class="duplicate-warning-chip" style="background-color: #fee2e2; color: #991b1b; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.2rem; border: 1px solid #fecaca; margin-left: 0.25rem;">⚠️ Duplicate warning</span>` : '';
+
       // Post Summary & Topic combined cell
       const postSummaryHtml = `
         <div style="display: flex; flex-direction: column; gap: 0.4rem;">
           <div style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">${escapeHtml(p.postSummary)}</div>
-          <div><span class="topic-pill-tag">${escapeHtml(p.topic)}</span></div>
+          <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem;">
+            <span class="topic-pill-tag">${escapeHtml(p.topic)}</span>
+            ${duplicateWarningHtml}
+          </div>
         </div>
       `;
 
@@ -905,6 +923,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             </svg>
           </button>
         </td>
+        <td style="text-align: center; vertical-align: middle;">
+          <button class="btn-icon delete-btn" data-id="${p.id}" title="Delete Post">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; margin: 0 auto; color: var(--text-muted);">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <line x1="10" y1="11" x2="10" y2="17"></line>
+              <line x1="14" y1="11" x2="14" y2="17"></line>
+            </svg>
+          </button>
+        </td>
       `;
 
       postsTableBody.appendChild(tr);
@@ -944,6 +972,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const postId = e.target.closest('.edit-btn').getAttribute('data-id');
         editingPostId = postId;
         await openCategoryEditModal(postId);
+      });
+    });
+
+    // Add event listeners to Delete buttons
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const postId = e.target.closest('.delete-btn').getAttribute('data-id');
+        if (confirm('Are you sure you want to delete this post?')) {
+          await window.postStorage.deletePost(postId);
+          await loadAndRenderPosts();
+        }
       });
     });
 

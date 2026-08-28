@@ -54,16 +54,26 @@ buildwithgemini-linkedin-post-agent/
 ├── blue_pin.png       # High-res blue pushpin logo and tab icon asset
 ├── faqConfig.js       # Editable FAQ questions & answers array (easily editable in any text editor)
 ├── aiConfig.js        # Editable AI speed/cost ratings and display names configuration array
+├── promptfooconfig.yaml # Promptfoo evaluation configuration mapping prompts and providers
+├── load-filtered-rows.js # Dynamic CSV test case loader mapping filters (range, ID, date)
+├── summarize-evals.js # Color-coded console metrics compiler with custom thresholds
+├── PROMPTFOO_NOTES.md # Step-by-step documentation for executing promptfoo tests
+├── package.json       # Node package manager configurations & scripts
 ├── css/
 │   └── styles.css     # Design system (Colors, vertical steps stack layout, badges, modals, centered page selectors)
-└── js/
-    ├── storage.js          # IndexedDB manager (`SPB_PostStore`), SHA-256 deduplication hash generator
-    ├── fileParser.js       # SheetJS parser for CSV/XLSX/XLS/JSON, Excel date code converter, body URL Regex extractor
-    ├── aiService.js        # Pluggable LLM adapter (Gemini on-device, Gemini/OpenAI cloud keys, Mock simulator)
-    ├── extensionBridge.js  # postMessage bridge manager for Chrome Extension interaction
-    ├── bookmarklet.js      # 1-Click Bookmarklet code generator with multi-container scrolling & DOM collector overlay
-    └── app.js              # Main UI controller, step progress trackers, parallel batching, URL parameters importer
+├── evals/             # Local database reports directory (git ignored)
+├── js/
+│   ├── storage.js          # IndexedDB manager (`SPB_PostStore`), SHA-256 deduplication hash generator
+│   ├── fileParser.js       # SheetJS parser for CSV/XLSX/XLS/JSON, Excel date code converter, body URL Regex extractor
+│   ├── aiService.js        # Pluggable LLM adapter (Gemini on-device, Gemini/OpenAI cloud keys, Mock simulator)
+│   ├── extensionBridge.js  # postMessage bridge manager for Chrome Extension interaction
+│   ├── bookmarklet.js      # 1-Click Bookmarklet code generator with multi-container scrolling & DOM collector overlay
+│   └── app.js              # Main UI controller, step progress trackers, parallel batching, URL parameters importer
+└── data/
+    ├── linkedin-saved-posts-demo.csv # Evaluation pipeline target source CSV file
+    └── posts_cache.json              # Local posts JSON browser cache database
 ```
+
 
 ---
 
@@ -134,4 +144,24 @@ graph TD
    * **1-Hour Alert Cooldown**: When logging an event, the Worker queries D1 for event occurrences in the last hour. If `count > 1`, the Discord webhook notification is skipped, preventing channel spam while preserving accurate aggregate logs.
 4. **Data Access**:
    * Protected `/report?key=SECRET` endpoint returns daily event tallies and overall averages in JSON format.
+
+---
+
+## 9. Promptfoo Quality & Regression Evaluation Pipeline
+
+The project includes an on-demand regression and quality evaluation pipeline built with **Promptfoo**. It allows dynamic row-pull testing from the local `./data/linkedin-saved-posts-demo.csv` database, applying a mix of zero-token deterministic checks and LLM-rubric semantic checks.
+
+### File Structure & Setup
+* **`promptfooconfig.yaml`**: Main Promptfoo configuration mapping provider (mock `echo` provider), dynamic test cases, and outputs directly to `evals/`.
+* **`load-filtered-rows.js`**: Dynamic test loader that parses the local CSV, evaluates duplicates, parses index range, date range, or ID filters from environment variables (`FILTER_MODE` / `FILTER_VALUE`), and yields test cases.
+* **`summarize-evals.js`**: Console reporting tool that aggregates evaluation statistics, computes pass ratios, and color-codes output metrics based on customizable threshold configurations.
+* **`PROMPTFOO_NOTES.md`**: Step-by-step pipeline user guide and execution commands cheat sheet.
+* **`evals/` (Git Ignored)**: Directory where interactive HTML reports (`eval_report.html`) and structured JSON outputs (`eval_report.json`) are written.
+
+### Evaluation Metrics
+1. **Duplicate ID Check** (Deterministic): Ensures post IDs are unique across the dataset.
+2. **Valid Date Check** (Deterministic): Validates post dates parse correctly (flagging invalid values like "Reposted").
+3. **Job Title Check** (Deterministic): Ensures `jobTitle` is not "NA" or "N/A".
+4. **High Value Takeaway** (Semantic/LLM Rubric): Uses `google:gemini-1.5-flash` (if `GEMINI_API_KEY` is present) to evaluate whether the generated post summary contains actionable developer details (jobs, hiring status, resources).
+
 

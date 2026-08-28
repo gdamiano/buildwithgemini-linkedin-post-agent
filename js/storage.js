@@ -44,7 +44,20 @@ class PostStorage {
    * Generates a 16-character SHA-256 hash ID for deduplication
    */
   async generateHashId(postLink, date, author, textContent) {
-    const rawString = `${postLink || ''}|${date || ''}|${author || ''}|${(textContent || '').slice(0, 200)}`;
+    let cleanLink = (postLink || '').trim().toLowerCase();
+    try {
+      if (cleanLink && (cleanLink.startsWith('http://') || cleanLink.startsWith('https://'))) {
+        const urlObj = new URL(cleanLink);
+        // Keep origin and pathname, drop search parameters/query and hash
+        cleanLink = urlObj.origin + urlObj.pathname;
+      }
+    } catch (e) {
+      // Fallback if URL parsing fails
+    }
+    // Remove trailing slashes
+    cleanLink = cleanLink.replace(/\/+$/, '');
+
+    const rawString = cleanLink;
     const msgBuffer = new TextEncoder().encode(rawString);
     const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
@@ -98,6 +111,18 @@ class PostStorage {
       const tx = this.db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
       const request = store.clear();
+
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async deletePost(id) {
+    await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = this.db.transaction(STORE_NAME, 'readwrite');
+      const store = tx.objectStore(STORE_NAME);
+      const request = store.delete(id);
 
       request.onsuccess = () => resolve(true);
       request.onerror = () => reject(request.error);
