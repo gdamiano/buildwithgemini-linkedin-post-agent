@@ -759,6 +759,37 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     topicChipsContainer.appendChild(readChip);
 
+    // Compute frequency of linkToPost URLs to flag existing duplicates for warnings chip
+    const linkCountMap = {};
+    allPosts.forEach(p => {
+      if (p.linkToPost && p.linkToPost !== 'N/A' && p.linkToPost.trim() !== '') {
+        const cleanLink = p.linkToPost.trim().toLowerCase().replace(/\/+$/, '');
+        linkCountMap[cleanLink] = (linkCountMap[cleanLink] || 0) + 1;
+      }
+    });
+
+    let duplicateCount = 0;
+    allPosts.forEach(p => {
+      const cleanLink = p.linkToPost ? p.linkToPost.trim().toLowerCase().replace(/\/+$/, '') : '';
+      if (cleanLink && linkCountMap[cleanLink] >= 2) {
+        duplicateCount++;
+      }
+    });
+
+    if (duplicateCount > 0) {
+      const warningsChip = document.createElement('div');
+      warningsChip.className = `topic-chip ${currentFilterTopic === 'Warnings' ? 'active' : ''}`;
+      warningsChip.style.backgroundColor = currentFilterTopic === 'Warnings' ? '#ef4444' : '#fee2e2';
+      warningsChip.style.color = currentFilterTopic === 'Warnings' ? '#ffffff' : '#991b1b';
+      warningsChip.style.borderColor = '#fecaca';
+      warningsChip.innerHTML = `⚠️ Warnings <span class="chip-count">${duplicateCount}</span>`;
+      warningsChip.addEventListener('click', () => {
+        currentFilterTopic = 'Warnings';
+        loadAndRenderPosts();
+      });
+      topicChipsContainer.appendChild(warningsChip);
+    }
+
     Object.keys(topicCounts).sort((a, b) => a.localeCompare(b)).forEach(topic => {
       const chip = document.createElement('div');
       chip.className = `topic-chip ${currentFilterTopic === topic ? 'active' : ''}`;
@@ -794,6 +825,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         matchesTopic = !p.read;
       } else if (currentFilterTopic === 'Read') {
         matchesTopic = p.read;
+      } else if (currentFilterTopic === 'Warnings') {
+        const cleanLink = p.linkToPost ? p.linkToPost.trim().toLowerCase().replace(/\/+$/, '') : '';
+        matchesTopic = !!(cleanLink && linkCountMap[cleanLink] >= 2);
       } else {
         matchesTopic = (p.topic === currentFilterTopic);
       }

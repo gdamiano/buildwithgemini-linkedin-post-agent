@@ -50,3 +50,9 @@ This workspace contains the **LinkedIn Saved Post Browser (SPB)** project.
 - **Original GCP Prototype Release:** `v0.1.0-gcp-prototype`
 - **Original GCP Archive Branch:** `archive/original-gcp-prototype`
 - **Main Production Branch:** `main`
+
+---
+
+## 5. Agent Constraints & Workspace Rules
+
+1. **Do NOT run Promptfoo tests/evals automatically:** Promptfoo should only be run manually by the user, as running it automatically expends AI credits unnecessarily. When verifying changes, rely on other verification mechanisms (like code/syntax checks or manual reviews) unless specifically instructed by the user to run Promptfoo.
