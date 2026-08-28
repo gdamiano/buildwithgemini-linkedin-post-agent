@@ -927,7 +927,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const linksHtml = linksList.length > 0 ? linksList.join('<br>') : '<span style="color: var(--text-muted);">None</span>';
 
       tr.innerHTML = `
-        <td style="white-space: nowrap; font-size: 0.85rem;">${p.date || 'N/A'}</td>
+        <td style="font-size: 0.85rem; max-width: 100px; word-break: break-word;">${p.date || 'N/A'}</td>
         <td style="max-width: 220px;">${nameAndTitleHtml}</td>
         <td style="max-width: 280px;">${postSummaryHtml}</td>
         <td style="font-size: 0.825rem;">${linksHtml}</td>
